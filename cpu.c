@@ -1,8 +1,5 @@
 #include <conio.h>
 
-/* run this program using the console pauser or add your own getch, system("pause") or input loop */
-
-unsigned int billy = 0 - 1;
 int programOld[512] = { 271, 1, 4239, 0, 2944 };
 int programOld2[512] = { 271, 1, 4239, 8, 2688, 4239, 0, 2944, 2304 };
 //int program[1024] = {271, 1, 4239, 8, 2688, 4239, 0, 2944, 4239, 12, 2688, 2304, 2304};
@@ -13,8 +10,9 @@ int programOld2[512] = { 271, 1, 4239, 8, 2688, 4239, 0, 2944, 2304 };
 //unsigned int program[1024] = {4111, 0, 4127, 512, 4143, 25, 2800, 10, 3056, 512, 4224, 4158, 4225, 4323, 271, 1, 287, 1, 514, 3312, 10, 2304};
 //unsigned int program[1024] = { 4111, 95, 4127, 0, 4143, 5, 4239, 12, 2688, 4239, 9, 2944, 1825, 4239, 94, 3968, 4352, 4368, 4384, 4239, 45, 2688, 4160, 4640, 4624, 4608, 4352, 4368, 4384, 4416, 4132, 4239, 12, 2688, 4672, 4640, 4624, 4608, 4161, 287, 1, 4239, 12, 2688, 2304, 4368, 274, 1296, 4224, 385, 4158, 4624, 543, 1, 303, 1, 4113, 287, 1, 4224, 385, 4174, 1844, 4239, 57, 3968, 559, 1, 4224, 386, 4174, 1859, 4239, 66, 3968, 1825, 4239, 93, 3968, 3456, 4224, 385, 4222, 4224, 386, 4206, 4327, 4224, 385, 4326, 4239, 56, 2944, 4098, 2304, 0, 4, 1, 3, 5, 2 };
 //unsigned int program[1024] = { 4111, 1, 2048, 4239, 3, 2944 };
-unsigned int program[1024] = { 4239, 6, 2688, 4239, 3, 2944, 4239, 9, 2688, 2304 };
+//unsigned int program[1024] = { 4239, 6, 2688, 4239, 3, 2944, 4239, 9, 2688, 2304 };
 //unsigned int program[1024] = { 2976 };
+unsigned int program[1024] = { 4111, 1, 527, 1, 4239, 2, 2944 };
 unsigned int r0 = 0;
 unsigned int r1 = 0;
 unsigned int r2 = 0;
@@ -34,7 +32,7 @@ unsigned int arg0;
 unsigned char nameArg0[20] = "";
 unsigned char nameArg1[20] = "";
 
-void cpuStep() {
+void cpuStep() { //when do you clear/reset flags???????????????
 	currentInstruction = program[pc];
 	arg0 = 0;
 	arg1 = 0;
@@ -42,12 +40,17 @@ void cpuStep() {
 	//fetch arg0
 	if ((currentInstruction & 240) == 240) { //op0=imm
 		arg0 = (unsigned int)&program[pc + 1];
-		itoa(*(int *)arg0, (char *)nameArg0, 10);
+		//itoa(*(int *)arg0, (char *)nameArg0, 10);
+		sprintf((char *)nameArg0, "%d", *(int *)arg0);
 		increment += 1;
 	}
 	else if ((currentInstruction & 224) == 224) {//op0=[idx]
 		arg0 = (unsigned int)&program[IDX];
 		sprintf((char *)nameArg0, "[IDX](%d:%d)",IDX, *(int*)arg0);
+	}
+	else if ((currentInstruction & 176) == 176) { //op0=flags
+		arg0 = (unsigned int)&flags;
+		sprintf((char*)nameArg0, "FLAGS(%d)", *(int*)arg0);
 	}
 	else if ((currentInstruction & 160) == 160) { //op0=sp
 		arg0 = (unsigned int)&sp;
@@ -100,12 +103,17 @@ void cpuStep() {
 	//fetch arg1
 	if ((currentInstruction & 15) == 15) { //op1=imm
 		arg1 = program[pc + 1];
-		itoa(arg1, (char*)nameArg1, 10);
+		//itoa(arg1, (char*)nameArg1, 10);
+		sprintf((char*)nameArg1, "%d", arg1);
 		increment += 1;
 	}
 	else if ((currentInstruction & 14) == 14) { //op1=[idx]
 		arg1 = program[IDX];
 		sprintf((char*)nameArg1, "[IDX](%d:%d)", IDX, arg1);
+	}
+	else if ((currentInstruction & 11) == 11) { //op1=flags
+		arg1 = flags;
+		sprintf((char*)nameArg1, "FLAGS(%d)", arg1);
 	}
 	else if ((currentInstruction & 10) == 10) { //op1=sp
 		arg1 = sp;
@@ -268,27 +276,37 @@ void cpuStep() {
 		*(unsigned int*)arg0 = *(unsigned int*)arg0 >> 1;
 	}
 	else if ((currentInstruction & 1024) == 1024) { //div
-		printf("Partially implemented DIV %s %s\n", nameArg0, nameArg1);
+		printf("DIV %s %s\n", nameArg0, nameArg1);
 		*(unsigned int*)arg0 = *(unsigned int*)arg0 / arg1;
 		//flags?
 	}
 	else if ((currentInstruction & 768) == 768) { //mul
-		printf("Partially implemented MUL %s %s\n", nameArg0, nameArg1);
+		printf("MUL %s %s\n", nameArg0, nameArg1);
 		*(unsigned int*)arg0 = *(unsigned int*)arg0 * arg1;
 		//flags?
 	}
 	else if ((currentInstruction & 512) == 512) { //sub
-		printf("Partially-implemented SUB %s %s\n", nameArg0, nameArg1);
+		printf("SUB %s %s\n", nameArg0, nameArg1);
+		int oldArg0 = *(unsigned int*)arg0;
 		//printf("Partially-implemented SUB %d %d\n", *(unsigned int*)arg0, arg1);
 		*(unsigned int*)arg0 = *(unsigned int*)arg0 - arg1;
-		//implement processor flag setting
+		if ((*(unsigned int*)arg0) > oldArg0) { //set borrow flag
+			flags = flags | 4;
+		}
+		if (*(unsigned int*)arg0 == 0) { //set zero flag
+			flags = flags | 1;
+		}
 	}
 	else if ((currentInstruction & 256) == 256) { //add
 		//printf("%d ", &r0);
-		printf("Partially implemented ADD %s %s\n", nameArg0, nameArg1);
+		printf("ADD %s %s\n", nameArg0, nameArg1);
+		int oldArg0 = *(unsigned int*)arg0;
 		//printf("ADD %d %d\n", *(unsigned int*)arg0, arg1);
 		*(unsigned int*)arg0 = *(unsigned int*)arg0 + arg1;
 		//implement processor flag setting
+		if ((*(unsigned int*)arg0) < oldArg0) { //set overflow flag
+			flags = flags | 2;
+		}
 	}
 
 	/**printf("   ");
@@ -305,7 +323,7 @@ int main(int argc, char** argv) {
 	int t = 0;
 	int inst = 1;
 	while (1) {
-		printf("PC=%u r0=%u r1=%u r2=%u r3=%u r4=%u SP=%u IDX=%u  ", pc, r0, r1, r2, r3, r4, sp, IDX);
+		printf("PC=%u r0=%u r1=%u r2=%u r3=%u r4=%u SP=%u IDX=%u Flags=%u  ", pc, r0, r1, r2, r3, r4, sp, IDX, flags);
 		//printf("%d: ", r0);
 		cpuStep();
 		if (t % inst == 0) { getch(); }
