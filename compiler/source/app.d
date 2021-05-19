@@ -21,6 +21,7 @@ int spShift;
 LocalVar[][] scopeStack;
 FunctionEntry[] functions;
 int pseudoStackSize;
+int labelNum;
 mixin(grammar(`PEXC:
 	Program < (GlobalDecl / GlobalArrayDecl / FunctionDecl)+
 	GlobalDecl < "u32" identifier ("=" IntLiteral)? ";"
@@ -43,12 +44,12 @@ mixin(grammar(`PEXC:
 	ExprBitOr < ExprBitXor ("|" ExprBitOr)?
 	ExprBitXor < ExprBitAnd ("^" ExprBitXor)?
 	ExprBitAnd < ExprEq ("&" ExprBitAnd)?
-	ExprEq < ExprCmp (("==" / "!=") ExprEq)?
-	ExprCmp < ExprShift (("<" / ">" / "<=" / ">=") ExprCmp)?
-	ExprShift < ExprAdd (("<<" / ">>") ExprShift)?
-	ExprAdd < ExprMul (("+" / "-") ExprAdd)?
-	ExprMul < ExprPrefixes (("*" / "/") ExprMul)?
-	ExprPrefixes < ("~" / "!" / "+" / "-"/ "*")* ExprAtom
+	ExprEq < ExprCmp (^("==" / "!=") ExprEq)?
+	ExprCmp < ExprShift (^("<" / ">" / "<=" / ">=") ExprCmp)?
+	ExprShift < ExprAdd (^("<<" / ">>") ExprShift)?
+	ExprAdd < ExprMul (^("+" / "-") ExprAdd)?
+	ExprMul < ExprPrefixes (^("*" / "/") ExprMul)?
+	ExprPrefixes < (^("~" / "!" / "+" / "-"/ "*"))* ExprAtom
 	ExprAtom < IntLiteral / "(" RValue ")" / ^identifier CallArgumentList / ("++" / "--" / "&")? ^identifier / ^identifier ("++" / "--")?
 	ReturnStatement < "return" RValue ";"`));
 
@@ -245,9 +246,9 @@ void bfp(ParseTree parse) {
 				foreach(scopeLevel; scopeStack[].retro) {
 					foreach(localVariable; scopeLevel) {
 						if (localVariable.name == varName) {
-							assembly ~= format!"LD r%d SP"(pseudoStackSize);
+							assembly ~= format!"LD r%d SP"(pseudoStackSize++);
 							if (spShift - localVariable.spOffset != 1) {
-								assembly ~= format!"ADD r%d %d"(pseudoStackSize++, spShift - localVariable.spOffset -1);
+								assembly ~= format!"ADD r%d %d"(pseudoStackSize-1, spShift - localVariable.spOffset -1);
 							}
 							foundMatch = true;
 							break;
@@ -273,11 +274,235 @@ void bfp(ParseTree parse) {
 						assembly ~= format!"LD IDX r%d"(--pseudoStackSize);
 						assembly ~= format!"LD [IDX] r%d"(--pseudoStackSize);
 						break;
+					case "+=":
+						assembly ~= format!"LD IDX r%d"(--pseudoStackSize);
+						assembly ~= format!"ADD [IDX] r%d"(--pseudoStackSize);
+						break;
+					case "-=":
+						assembly ~= format!"LD IDX r%d"(--pseudoStackSize);
+						assembly ~= format!"SUB [IDX] r%d"(--pseudoStackSize);
+						break;
+					case "*=":
+						assembly ~= format!"LD IDX r%d"(--pseudoStackSize);
+						assembly ~= format!"MUL [IDX] r%d"(--pseudoStackSize);
+						break;
+					case "/=":
+						assembly ~= format!"LD IDX r%d"(--pseudoStackSize);
+						assembly ~= format!"DIV [IDX] r%d"(--pseudoStackSize);
+						break;
+					case "<<=":
+						assembly ~= format!"LD IDX r%d"(--pseudoStackSize);
+						assembly ~= format!"LS [IDX] r%d"(--pseudoStackSize);
+						break;
+					case ">>=":
+						assembly ~= format!"LD IDX r%d"(--pseudoStackSize);
+						assembly ~= format!"RS [IDX] r%d"(--pseudoStackSize);
+						break;
+					case "&=":
+						assembly ~= format!"LD IDX r%d"(--pseudoStackSize);
+						assembly ~= format!"AND [IDX] r%d"(--pseudoStackSize);
+						break;
+					case "|=":
+						assembly ~= format!"LD IDX r%d"(--pseudoStackSize);
+						assembly ~= format!"OR [IDX] r%d"(--pseudoStackSize);
+						break;
+					case "^=":
+						assembly ~= format!"LD IDX r%d"(--pseudoStackSize);
+						assembly ~= format!"XOR [IDX] r%d"(--pseudoStackSize);
+						break;
 					default:
-						throw new CompilationException("sorry that compound assignment operator's not supported yet!");
+						throw new CompilationException("This text should never appear, but it'll be a pain if it does.");
 				}
 			} else {
 				pseudoStackSize--;
+			}
+			break;
+		case "PEXC.RValue":
+			bfp(parse[0]);
+			if (parse.children.length == 3) {
+				assembly ~= format!"CMP r%d 0"(--pseudoStackSize);
+				assembly ~= format!"JEQ l%d"(labelNum++);
+				int firstLabel = labelNum-1;
+				bfp(parse[1]);
+				assembly ~= format!"JMP l%d"(labelNum++);
+				assembly ~= format!"l%d:"(firstLabel);
+				pseudoStackSize--;
+				bfp(parse[1]);
+				assembly ~= format!"l%d:"(labelNum-1);
+			}
+			break;
+		case "PEXC.ExprLogOr":
+			bfp(parse[0]);
+			if (parse.children.length == 2) {
+				assembly ~= format!"CMP r%d 0"(--pseudoStackSize);
+				assembly ~= format!"JNE l%d"(labelNum++);
+				int firstLabel = labelNum-1;
+				bfp(parse[1]);
+				assembly ~= format!"CMP r%d 0"(--pseudoStackSize);
+				assembly ~= format!"JNE l%d"(firstLabel);
+				assembly ~= format!"LD r%d 0"(pseudoStackSize);
+				assembly ~= format!"JMP l%d"(labelNum++);
+				assembly ~= format!"l%d:"(firstLabel);
+				assembly ~= format!"LD r%d 1"(pseudoStackSize++);
+				assembly ~= format!"l%d:"(labelNum-1);
+			}
+			break;
+		case "PEXC.ExprLogAnd":
+			bfp(parse[0]);
+			if (parse.children.length == 2) {
+				assembly ~= format!"CMP r%d 0"(--pseudoStackSize);
+				assembly ~= format!"JEQ l%d"(labelNum++);
+				int firstLabel = labelNum-1;
+				bfp(parse[1]);
+				assembly ~= format!"CMP r%d 0"(--pseudoStackSize);
+				assembly ~= format!"JEQ l%d"(firstLabel);
+				assembly ~= format!"LD r%d 1"(pseudoStackSize);
+				assembly ~= format!"JMP l%d"(labelNum++);
+				assembly ~= format!"l%d:"(firstLabel);
+				assembly ~= format!"LD r%d 0"(pseudoStackSize++);
+				assembly ~= format!"l%d:"(labelNum-1);
+			}
+			break;
+		case "PEXC.ExprBitOr":
+			bfp(parse[0]);
+			if (parse.children.length == 2) {
+				bfp(parse[1]);
+				assembly ~= format!"OR r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+			}
+			break;
+		case "PEXC.ExprBitXor":
+			bfp(parse[0]);
+			if (parse.children.length == 2) {
+				bfp(parse[1]);
+				assembly ~= format!"XOR r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+			}
+			break;
+		case "PEXC.ExprBitAnd":
+			bfp(parse[0]);
+			if (parse.children.length == 2) {
+				bfp(parse[1]);
+				assembly ~= format!"AND r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+			}
+			break;
+		case "PEXC.ExprEq":
+			bfp(parse[0]);
+			if (parse.children.length == 3) {
+				string operation;
+				switch(parse[1].matches[0]) {
+					case "==":
+						operation = "JEQ";
+						break;
+					case "!=":
+						operation = "JNE";
+						break;
+					default:
+						throw new CompilationException("This message should never appear. What will I do if it does?");
+				}
+				bfp(parse[2]);
+				assembly ~= format!"CMP r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+				assembly ~= format!"%s l%d"(operation, labelNum++);
+				assembly ~= format!"LD r%d 0"(pseudoStackSize);
+				assembly ~= format!"JMP l%d"(labelNum++);
+				assembly ~= format!"l%d:"(labelNum-2);
+				assembly ~= format!"LD r%d 1"(pseudoStackSize);
+				assembly ~= format!"l%d:"(labelNum-1);
+			}
+			break;
+		case "PEXC.ExprCmp":
+			bfp(parse[0]);
+			if (parse.children.length == 3) {
+				string operation;
+				bool invert;
+				switch(parse[1].matches[0]) {
+					case ">":
+						operation = "JGT";
+						break;
+					case "<":
+						operation = "JLT";
+						break;
+					case ">=":
+						operation = "JLT";
+						invert = true;
+						break;
+					case "<=":
+						operation = "JGT";
+						invert = true;
+						break;
+					default:
+						throw new CompilationException("This message should never appear. What will I do if it does?");
+				}
+				bfp(parse[2]);
+				assembly ~= format!"CMP r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+				assembly ~= format!"%s l%d"(operation, labelNum++);
+				assembly ~= format!"LD r%d %d"(pseudoStackSize, invert ? 1 : 0);
+				assembly ~= format!"JMP l%d"(labelNum++);
+				assembly ~= format!"l%d:"(labelNum-2);
+				assembly ~= format!"LD r%d %d"(pseudoStackSize, invert ? 0 : 1);
+				assembly ~= format!"l%d:"(labelNum-1);
+			}
+			break;
+		case "PEXC.ExprShift":
+			bfp(parse[0]);
+			if (parse.children.length == 3) {
+				bfp(parse[2]);
+				if (parse[1].matches[0] == "<<") {
+					assembly ~= format!"LS r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+				} else {
+					assembly ~= format!"RS r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+				}
+			}
+			break;
+		case "PEXC.ExprAdd":
+			bfp(parse[0]);
+			if (parse.children.length == 3) {
+				bfp(parse[2]);
+				if (parse[1].matches[0] == "+") {
+					assembly ~= format!"ADD r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+				} else {
+					assembly ~= format!"SUB r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+				}
+			}
+			break;
+		case "PEXC.ExprMul":
+			bfp(parse[0]);
+			if (parse.children.length == 3) {
+				bfp(parse[2]);
+				if (parse[1].matches[0] == "*") {
+					assembly ~= format!"MUL r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+				} else {
+					assembly ~= format!"DIV r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+				}
+			}
+			break;
+		case "PEXC.ExprPrefixes":
+			bfp(parse[$-1]);
+			foreach(op; parse[0..$-1]) {
+				switch(op.matches[0]) {
+					case "~":
+						assembly ~= format!"NOT r%d"(pseudoStackSize-1);
+						break;
+					case "!":
+						assembly ~= format!"CMP r%d 0"(pseudoStackSize-1);
+						assembly ~= format!"JEQ l%d"(labelNum++);
+						assembly ~= format!"LD r%d 1"(pseudoStackSize-1);
+						assembly ~= format!"JMP l%d"(labelNum++);
+						assembly ~= format!"l%d:"(labelNum-2);
+						assembly ~= format!"LD r%d 0"(pseudoStackSize-1);
+						assembly ~= format!"l%d:"(labelNum-1);
+						break;
+					case "+":
+						break;
+					case "-":
+						assembly ~= format!"NOT r%d"(pseudoStackSize-1);
+						assembly ~= format!"ADD r%d 1"(pseudoStackSize-1);
+						break;
+					case "*":
+						assembly ~= format!"LD IDX r%d"(pseudoStackSize-1);
+						assembly ~= format!"LD r%d [IDX]"(pseudoStackSize-1);
+						break;
+					default:
+						throw new CompilationException("This message shouldn't appear, but if it does, it's a bug.");
+				}
 			}
 			break;
 		case "PEXC.ReturnStatement":

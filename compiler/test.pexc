@@ -1,9 +1,3 @@
-u32 f(u32 a, u32 b) {
-	return a;
-}
 void main() {
-	u32 x = 1;
-	u32 y = 2;
-	f(x, y);
-
+	1 || 1;
 }
