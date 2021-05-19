@@ -23,16 +23,16 @@ FunctionEntry[] functions;
 int pseudoStackSize;
 int labelNum;
 mixin(grammar(`PEXC:
-	Program < (GlobalDecl / GlobalArrayDecl / FunctionDecl)+
+	Program < (FunctionDecl / GlobalDecl / GlobalArrayDecl)+
 	GlobalDecl < "u32" identifier ("=" IntLiteral)? ";"
 	IntLiteral < ~("-"?[0-9]+)
 	GlobalArrayDecl < "u32[" IntLiteral ? "]" ^identifier ("=" (ArrayLiteral / StringLiteral))? ";"
 	ArrayLiteral < "{" IntLiteral ("," IntLiteral)* "}"
 	StringLiteral < '\"' ~(((!'\"' .) | :'\\' '\"')*) !'\\' '\"'
 	FunctionDecl < ("u32" / "void") ^identifier ArgumentList Statement
-	ArgumentList < "(" (Argument ("," Argument)+)? ")"
+	ArgumentList < "(" (Argument ("," Argument)*)? ")"
 	Argument < "u32" ^identifier
-	CallArgumentList < "(" (RValue ("," RValue)+)? ")"
+	CallArgumentList < "(" (RValue ("," RValue)*)? ")"
 	Statement < BlockStatement / LocalDecl / ExpressionStatement / ReturnStatement
 	LocalDecl < "u32" identifier ("=" IntLiteral)? ";"
 	BlockStatement < "{" Statement* "}"
@@ -511,7 +511,7 @@ void bfp(ParseTree parse) {
 		case "PEXC.ReturnStatement":
 			bfp(parse[0]);
 			pseudoStackSize--;
-			assembly ~= format!"ADD SP %d"(spShift+1);
+			assembly ~= format!"ADD SP %d"(spShift);
 			assembly ~= "RET";
 			break;
 		case "PEXC.Statement":
