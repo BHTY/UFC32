@@ -1,0 +1,12 @@
+{
+	"authors": [
+		"rous"
+	],
+	"copyright": "kjhrukrhoireughdoirghdroiughgigh",
+	"dependencies": {
+		"pegged": "~>0.4.5"
+	},
+	"description": "it's a compiler",
+	"license": "idk",
+	"name": "compiler"
+}
