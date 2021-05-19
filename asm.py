@@ -110,7 +110,8 @@ instructions = {"LD": 0x1000, "ADD": 0x100, "SUB": 0x200, "MUL": 0x300,
                 "DIV": 0x400, "RS": 0x500, "LS": 0x600, "CMP": 0x700,
                 "NOT": 0x800, "RET": 0x900, "CALL": 0xa00, "JMP": 0xb00,
                 "JNE": 0xc00, "JLT": 0xf00, "PUSH": 0x1100, "POP": 0x1200,
-                "JEQ": 0xd00}
+                "JEQ": 0xd00, "JGT": 0xe00, "AND": 0x1300, "OR": 0x1400,
+                "XOR": 0x1500}
 
 inv_map = {v: k for k, v in instructions.items()}
 d_sorted = {key:value for key, value in sorted(inv_map.items(), key=lambda item: int(item[0]))}
