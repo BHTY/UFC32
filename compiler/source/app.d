@@ -55,17 +55,6 @@ mixin(grammar(`PEXC:
 
 string[] assembly;
 void main(string[] argv) {
-	version (Windows) {
-		writeln("---------------------WARNING!!!----------------------");
-		writeln("    You are using Windows, which is an inferior");
-		writeln("     operating system. Please switch to a more");
-		writeln("     well designed OS before continuing. Such");
-		writeln("            operating systems include:");
-		writeln("                     - Linux");
-		writeln("   Press enter to accept the consequences of using");
-		writeln("           an inferior operating system.");
-		readln();
-	}
 	if (argv.length < 3) {
 		writeln("Usage: " ~ argv[0] ~ " <in.pexc> <out.pexs> [parsetree.txt]");
 	}
@@ -82,10 +71,13 @@ void main(string[] argv) {
 	assembly ~= ["LD IDX main","CALL IDX"];
 	bfp(tree);
 	auto outfile = File(argv[2], "w");
+	string outtxt;
 	foreach(line; assembly) {
-		outfile.writeln(line);
+		outtxt ~= line ~ "\n";
 	}
+	outfile.write(outtxt.replace(":\n",": "));
 	outfile.close();
+	
 }
 class CompilationException : Exception {
 	mixin basicExceptionCtors;
