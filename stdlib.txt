@@ -1,0 +1,10 @@
+Standard Library Functions
+
+strcmp / memcmp
+strcpy / memcpy
+sprintf
+
+Console Specific Functions
+
+Uploading Code to PEX-2
+Sprite Blitting
