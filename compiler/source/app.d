@@ -55,6 +55,17 @@ mixin(grammar(`PEXC:
 
 string[] assembly;
 void main(string[] argv) {
+	version (Windows) {
+		writeln("---------------------WARNING!!!----------------------");
+		writeln("    You are using Windows, which is an inferior");
+		writeln("     operating system. Please switch to a more");
+		writeln("     well designed OS before continuing. Such");
+		writeln("            operating systems include:");
+		writeln("                     - Linux");
+		writeln("   Press enter to accept the consequences of using");
+		writeln("           an inferior operating system.");
+		readln();
+	}
 	if (argv.length < 3) {
 		writeln("Usage: " ~ argv[0] ~ " <in.pexc> <out.pexs> [parsetree.txt]");
 	}
@@ -202,8 +213,8 @@ void bfp(ParseTree parse) {
 					foreach(localVariable; scopeLevel) {
 						if (localVariable.name == varName) {
 							assembly ~= "LD IDX SP";
-							if (spShift - localVariable.spOffset != 0) {
-								assembly ~= format!"ADD IDX %d"(spShift - localVariable.spOffset);
+							if (spShift - localVariable.spOffset != 1) {
+								assembly ~= format!"ADD IDX %d"(spShift - localVariable.spOffset - 1);
 							}
 							foundMatch = true;
 							break;
@@ -247,8 +258,8 @@ void bfp(ParseTree parse) {
 					foreach(localVariable; scopeLevel) {
 						if (localVariable.name == varName) {
 							assembly ~= format!"LD r%d SP"(pseudoStackSize++);
-							if (spShift - localVariable.spOffset != 0) {
-								assembly ~= format!"ADD r%d %d"(pseudoStackSize-1, spShift - localVariable.spOffset);
+							if (spShift - localVariable.spOffset != 1) {
+								assembly ~= format!"ADD r%d %d"(pseudoStackSize-1, spShift - localVariable.spOffset-1);
 							}
 							foundMatch = true;
 							break;
