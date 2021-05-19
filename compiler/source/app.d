@@ -117,6 +117,7 @@ void bfp(ParseTree parse) {
 			functions ~= FunctionEntry(parse[0].matches[0], parse[1].children.length.to!int, parse.matches[0] == "void");
 			assembly ~= parse[0].matches[0] ~ ":";
 			int whichReg = 0;
+			assembly ~= "SUB SP 1";
 			if (parse[1].children.length > 0) {
 				assembly ~= "LD IDX SP";
 				foreach(arg; parse[1].children) {
@@ -132,7 +133,7 @@ void bfp(ParseTree parse) {
 			}
 			bfp(parse[2]);
 			if (spShift > 0) {
-				assembly ~= format!"ADD SP %d"(spShift);
+				assembly ~= format!"ADD SP %d"(spShift+1);
 			}
 			assembly ~= "RET";
 			scopeStack = scopeStack[1..$];
@@ -508,7 +509,7 @@ void bfp(ParseTree parse) {
 		case "PEXC.ReturnStatement":
 			bfp(parse[0]);
 			pseudoStackSize--;
-			assembly ~= format!"ADD SP %d"(spShift);
+			assembly ~= format!"ADD SP %d"(spShift+1);
 			assembly ~= "RET";
 			break;
 		case "PEXC.Statement":
