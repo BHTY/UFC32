@@ -117,7 +117,6 @@ void bfp(ParseTree parse) {
 			functions ~= FunctionEntry(parse[0].matches[0], parse[1].children.length.to!int, parse.matches[0] == "void");
 			assembly ~= parse[0].matches[0] ~ ":";
 			int whichReg = 0;
-			assembly ~= "SUB SP 1";
 			if (parse[1].children.length > 0) {
 				assembly ~= "LD IDX SP";
 				foreach(arg; parse[1].children) {
@@ -125,15 +124,15 @@ void bfp(ParseTree parse) {
 					if (whichReg > 7) {
 						throw new CompilationException(format!"Too many arguments for %s error on line %d"(parse[0].matches[0], count(parse.input[0..parse.end], "\n") + 1));
 					}
-					assembly ~= format!"LD [IDX] r%d"(whichReg++);
 					assembly ~= format!"SUB IDX 1";
+					assembly ~= format!"LD [IDX] r%d"(whichReg++);
 					spShift++;
 				}
 				assembly ~= "LD SP IDX";
 			}
 			bfp(parse[2]);
 			if (spShift > 0) {
-				assembly ~= format!"ADD SP %d"(spShift+1);
+				assembly ~= format!"ADD SP %d"(spShift);
 			}
 			assembly ~= "RET";
 			scopeStack = scopeStack[1..$];
@@ -203,8 +202,8 @@ void bfp(ParseTree parse) {
 					foreach(localVariable; scopeLevel) {
 						if (localVariable.name == varName) {
 							assembly ~= "LD IDX SP";
-							if (spShift - localVariable.spOffset != 1) {
-								assembly ~= format!"ADD IDX %d"(spShift - localVariable.spOffset - 1);
+							if (spShift - localVariable.spOffset != 0) {
+								assembly ~= format!"ADD IDX %d"(spShift - localVariable.spOffset);
 							}
 							foundMatch = true;
 							break;
@@ -248,8 +247,8 @@ void bfp(ParseTree parse) {
 					foreach(localVariable; scopeLevel) {
 						if (localVariable.name == varName) {
 							assembly ~= format!"LD r%d SP"(pseudoStackSize++);
-							if (spShift - localVariable.spOffset != 1) {
-								assembly ~= format!"ADD r%d %d"(pseudoStackSize-1, spShift - localVariable.spOffset -1);
+							if (spShift - localVariable.spOffset != 0) {
+								assembly ~= format!"ADD r%d %d"(pseudoStackSize-1, spShift - localVariable.spOffset);
 							}
 							foundMatch = true;
 							break;
