@@ -202,6 +202,8 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
                 if len(temp) == 3:
                     if temp[2] not in consts:
                         instsize += 1
+        if len(temp) == 3 and temp[1][0] == "J" or len(temp) == 2 and temp[0][0] == "J":
+            instsize += 1
         if temp[0] != "":
             if temp[0][-1] == ":":
                 labels[temp[0][0:-1]] = pc
