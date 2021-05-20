@@ -11,3 +11,5 @@ The C compiler is found in the "compiler" folder and currently supports the foll
 The remaining components to still be added include
 - Loops (for/while) 
 - Preprocessor
+- Comments (both C89 and C99 style)
+- Assigning a u32 to a char value (or array of char values)
