@@ -16,3 +16,13 @@ The remaining components to still be added include
 - Assigning a u32 to a char value (or array of char values)
 
 There are currently no plans to add support for structs, or any C++ features/constructs at this time.
+
+
+**Usage**
+You'll need to compile the C compiler using your D compiler of choice. For example, using DMD, type the commands "dub build" in the compiler directory. Once it's built, use the following syntax to compile your code: compiler _input.pexc_ _output.pexs_
+
+Once you have an assembly language file, you can look at or edit the file in any standard ASCII text editor, potentially performing manual optimizations, but generally you'll want to assemble it. To do this, copy your _output.pexs_ file into the directory with asm.py (or vice-versa), and then, assuming Python is in your path environment variable, run the following command: python asm.py _output.pexs_ _output.bin_
+
+You now have a binary ROM image that you can load into the PEX/UFC32 emulator. Copy the bin file into the same directory as cpu.c, compile it using your C compiler of choice, and then run: cpu _output.bin_
+
+Currently, the virtual machine goes straight into a debugger, which shows a live disassembly and status of the registers, along with the status of the memory location 510 (0x1FE), as that memory address has often been used for testing.
