@@ -5,7 +5,7 @@ The C compiler is found in the "compiler" folder and currently supports the foll
 - Global and local variables
 - Expressions (and pointers)
 - Functions
-- Conditional statements (if/else) - currently buggy
+- Conditional statements (if/else) - else if is currently broken
 - Local and global arrays
 
 The remaining components to still be added include
