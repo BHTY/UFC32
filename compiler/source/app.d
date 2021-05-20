@@ -33,8 +33,8 @@ mixin(grammar(`PEXC:
 	ArgumentList < "(" (Argument ("," Argument)*)? ")"
 	Argument < "u32" ^identifier
 	CallArgumentList < "(" (RValue ("," RValue)*)? ")"
-	Statement < BlockStatement / LocalDecl / ExpressionStatement / ReturnStatement
-	LocalDecl < "u32" identifier ("=" IntLiteral)? ";"
+	Statement < BlockStatement / LocalDecl / ExpressionStatement / ReturnStatement / InlineAsmStatement / IfStatement
+	LocalDecl < "u32" identifier ("=" RValue)? ";"
 	BlockStatement < "{" Statement* "}"
 	ExpressionStatement < (LValue ^("=" / "+=" / "-=" / "*=" / "/=" / "&=" / "|=" / "<<=" / ">>="))? RValue ";"
 	LValue < ^identifier / "*" ExprAtom
@@ -49,9 +49,13 @@ mixin(grammar(`PEXC:
 	ExprShift < ExprAdd (^("<<" / ">>") ExprShift)?
 	ExprAdd < ExprMul (^("+" / "-") ExprAdd)?
 	ExprMul < ExprPrefixes (^("*" / "/") ExprMul)?
-	ExprPrefixes < (^("~" / "!" / "+" / "-"/ "*"))* ExprAtom
+	ExprPrefixes < (^("~" / "!" / "+" / "-"/ "*"))* ExprIndexed
+	ExprIndexed < ExprAtom ("[" RValue "]")*
 	ExprAtom < IntLiteral / "(" RValue ")" / ^identifier CallArgumentList / ("++" / "--" / "&")? ^identifier / ^identifier ("++" / "--")?
-	ReturnStatement < "return" RValue ";"`));
+	ReturnStatement < "return" RValue ";"
+	InlineAsmStatement < "asm" "{" InlineAsm "}" ";"
+	InlineAsm <- ~((!'}' .)*)
+	IfStatement < "if" "(" RValue ")" Statement ("else" Statement)?`));
 
 string[] assembly;
 void main(string[] argv) {
@@ -108,10 +112,12 @@ void bfp(ParseTree parse) {
 			if (arrayPrefix.length > arrayLength) {
 				throw new CompilationException(format!"Array not long enough error on line %d"(count(parse.input[0..parse.end], "\n") + 1));
 			}
-			assembly ~= parse[1].matches[0] ~ ":";
+			assembly ~= "_" ~ parse[1].matches[0] ~ "_data:";
 			foreach (i; 0..arrayLength) {
 				assembly ~= format!"DB %d"(i < arrayPrefix.length ? arrayPrefix[i] : 0);
 			}
+			assembly ~= parse[1].matches[0] ~ ":";
+			assembly ~= "DB _" ~ parse[1].matches[0] ~ "_data";
 			globalSymbols ~= parse[1].matches[0];
 			break;
 		case "PEXC.FunctionDecl":
@@ -143,7 +149,8 @@ void bfp(ParseTree parse) {
 		case "PEXC.LocalDecl":
 			scopeStack[$-1] ~= LocalVar(parse.matches[1], spShift);
 			if (parse.children.length == 1) {
-				assembly ~= format!"PUSH %s"(parse[0].matches[0]);
+				bfp(parse[0]);
+				assembly ~= format!"PUSH r%d"(--pseudoStackSize);
 			} else {
 				assembly ~= "PUSH 0";
 			}
@@ -404,10 +411,10 @@ void bfp(ParseTree parse) {
 				bfp(parse[2]);
 				assembly ~= format!"CMP r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
 				assembly ~= format!"%s l%d"(operation, labelNum++);
-				assembly ~= format!"LD r%d 0"(pseudoStackSize);
+				assembly ~= format!"LD r%d 0"(pseudoStackSize-1);
 				assembly ~= format!"JMP l%d"(labelNum++);
 				assembly ~= format!"l%d:"(labelNum-2);
-				assembly ~= format!"LD r%d 1"(pseudoStackSize);
+				assembly ~= format!"LD r%d 1"(pseudoStackSize-1);
 				assembly ~= format!"l%d:"(labelNum-1);
 			}
 			break;
@@ -437,10 +444,10 @@ void bfp(ParseTree parse) {
 				bfp(parse[2]);
 				assembly ~= format!"CMP r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
 				assembly ~= format!"%s l%d"(operation, labelNum++);
-				assembly ~= format!"LD r%d %d"(pseudoStackSize, invert ? 1 : 0);
+				assembly ~= format!"LD r%d %d"(pseudoStackSize-1, invert ? 1 : 0);
 				assembly ~= format!"JMP l%d"(labelNum++);
 				assembly ~= format!"l%d:"(labelNum-2);
-				assembly ~= format!"LD r%d %d"(pseudoStackSize, invert ? 0 : 1);
+				assembly ~= format!"LD r%d %d"(pseudoStackSize-1, invert ? 0 : 1);
 				assembly ~= format!"l%d:"(labelNum-1);
 			}
 			break;
@@ -508,6 +515,15 @@ void bfp(ParseTree parse) {
 				}
 			}
 			break;
+		case "PEXC.ExprIndexed":
+			bfp(parse[0]);
+			foreach(idx; parse[1..$]) {
+				bfp(idx);
+				assembly ~= format!"ADD r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
+				assembly ~= format!"LD IDX r%d"(pseudoStackSize-1);
+				assembly ~= format!"LD r%d [IDX]"(pseudoStackSize-1);
+			}
+			break;
 		case "PEXC.ReturnStatement":
 			bfp(parse[0]);
 			pseudoStackSize--;
@@ -517,6 +533,25 @@ void bfp(ParseTree parse) {
 		case "PEXC.Statement":
 			bfp(parse[0]);
 			assert(pseudoStackSize == 0);
+			break;
+		case "PEXC.InlineAsmStatement":
+			assembly ~= parse[0].matches[0];
+			break;
+		case "PEXC.IfStatement":
+			bfp(parse[0]);
+			assembly ~= format!"CMP r%d 0"(--pseudoStackSize);
+			assembly ~= format!"JEQ l%d"(labelNum);
+			int firstLabel = labelNum++;
+			bfp(parse[1]);
+			if (parse.children.length == 3) {
+				assembly ~= format!"JMP l%d"(labelNum);
+				assembly ~= format!"l%d:"(firstLabel);
+				int secondLabel = labelNum++;
+				bfp(parse[2]);
+				assembly ~= format!"l%d:"(secondLabel);
+			} else {
+				assembly ~= format!"l%d:"(firstLabel);
+			}
 			break;
 		default:
 			foreach(child; parse) {

@@ -189,7 +189,9 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
     for i in string:
         instsize = 1
         temp = i.split(" ")
-        if len(temp) > 2:
+        if "DB" in temp:
+            pass
+        elif len(temp) > 2:
             if temp[0][-1] != ":":
                 if temp[2] not in consts:
                     instsize += 1
@@ -207,6 +209,7 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
             if temp[1] not in consts:
                 instsize += 1
         else: instsize = 0
+        print(i, " instruction size ", instsize)
         pc += instsize
 
     pc = 0
@@ -311,7 +314,8 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
 file = open(sys.argv[1], "r+")
 text = file.read()
 file.close()
-binary = assemble(text)[0]
+binary, labels = assemble(text)
+print(disasm(binary, labels))
 newbin = []
 
 #convert binary to 8-bit
