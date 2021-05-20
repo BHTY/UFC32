@@ -1,10 +1,4 @@
-u32 poke(u32 addr, u32 val){
-    *addr = val;
-}
-
 void main() {
-    poke(511, 10);
-    u32 x;
-    x = *511;
+	u32 array[10] = {1, 2, 3, 4, 5};
+	u32 x = array[2];
 }
-

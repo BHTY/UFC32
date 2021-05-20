@@ -26,15 +26,16 @@ mixin(grammar(`PEXC:
 	Program < (FunctionDecl / GlobalDecl / GlobalArrayDecl)+
 	GlobalDecl < "u32" identifier ("=" IntLiteral)? ";"
 	IntLiteral < ~("-"?[0-9]+)
-	GlobalArrayDecl < "u32[" IntLiteral ? "]" ^identifier ("=" (ArrayLiteral / StringLiteral))? ";"
+	GlobalArrayDecl < "u32" ^identifier "[" (IntLiteral) ? "]" ("=" (ArrayLiteral / StringLiteral))? ";"
 	ArrayLiteral < "{" IntLiteral ("," IntLiteral)* "}"
 	StringLiteral < '\"' ~(((!'\"' .) | :'\\' '\"')*) !'\\' '\"'
 	FunctionDecl < ("u32" / "void") ^identifier ArgumentList Statement
 	ArgumentList < "(" (Argument ("," Argument)*)? ")"
 	Argument < "u32" ^identifier
 	CallArgumentList < "(" (RValue ("," RValue)*)? ")"
-	Statement < BlockStatement / LocalDecl / ExpressionStatement / ReturnStatement / InlineAsmStatement / IfStatement
+	Statement < BlockStatement / LocalDecl / LocalArrayDecl / ExpressionStatement / ReturnStatement / InlineAsmStatement / IfStatement
 	LocalDecl < "u32" identifier ("=" RValue)? ";"
+	LocalArrayDecl < "u32" ^identifier "[" (IntLiteral) ? "]" ("=" (ArrayLiteral / StringLiteral))? ";"
 	BlockStatement < "{" Statement* "}"
 	ExpressionStatement < (LValue ^("=" / "+=" / "-=" / "*=" / "/=" / "&=" / "|=" / "<<=" / ">>="))? RValue ";"
 	LValue < ^identifier / "*" ExprAtom
@@ -96,12 +97,12 @@ void bfp(ParseTree parse) {
 			ulong arrayLength;
 			if (parse.children.length == 0) {
 				arrayLength = 0;
-			} else if (parse[0].name == "PEXC.IntLiteral") {
-				arrayLength = parse[0].matches[0].to!int;
+			} else if (parse[1].name == "PEXC.IntLiteral") {
+				arrayLength = parse[1].matches[0].to!int;
 			} else if (parse[$-1].name == "PEXC.ArrayLiteral") {
-				arrayLength = parse[0].children.length;
+				arrayLength = parse[1].children.length;
 			} else {
-				arrayLength = parse[0].matches[1].length;
+				arrayLength = parse[1].matches[1].length;
 			}
 			int[] arrayPrefix;
 			if (parse.children.length != 0 && parse[$-1].name == "PEXC.ArrayLiteral") {
@@ -112,13 +113,13 @@ void bfp(ParseTree parse) {
 			if (arrayPrefix.length > arrayLength) {
 				throw new CompilationException(format!"Array not long enough error on line %d"(count(parse.input[0..parse.end], "\n") + 1));
 			}
-			assembly ~= "_" ~ parse[1].matches[0] ~ "_data:";
+			assembly ~= "_" ~ parse[0].matches[0] ~ "_data:";
 			foreach (i; 0..arrayLength) {
 				assembly ~= format!"DB %d"(i < arrayPrefix.length ? arrayPrefix[i] : 0);
 			}
-			assembly ~= parse[1].matches[0] ~ ":";
-			assembly ~= "DB _" ~ parse[1].matches[0] ~ "_data";
-			globalSymbols ~= parse[1].matches[0];
+			assembly ~= parse[0].matches[0] ~ ":";
+			assembly ~= "DB _" ~ parse[0].matches[0] ~ "_data";
+			globalSymbols ~= parse[0].matches[0];
 			break;
 		case "PEXC.FunctionDecl":
 			scopeStack ~= new LocalVar[0];
@@ -154,6 +155,35 @@ void bfp(ParseTree parse) {
 			} else {
 				assembly ~= "PUSH 0";
 			}
+			spShift++;
+			break;
+		case "PEXC.LocalArrayDecl":
+			ulong arrayLength;
+			if (parse.children.length == 0) {
+				arrayLength = 0;
+			} else if (parse[1].name == "PEXC.IntLiteral") {
+				arrayLength = parse[1].matches[0].to!int;
+			} else if (parse[$-1].name == "PEXC.ArrayLiteral") {
+				arrayLength = parse[1].children.length;
+			} else {
+				arrayLength = parse[1].matches[1].length;
+			}
+			int[] arrayPrefix;
+			if (parse.children.length != 0 && parse[$-1].name == "PEXC.ArrayLiteral") {
+				arrayPrefix = parse[$-1].children.map!(a => a.matches[0].to!int).array;
+			} else if (parse.children.length != 0 && parse[$-1].name == "PEXC.StringLiteral") {
+				arrayPrefix = parse[$-1].matches[1].map!(a => cast(int)(a)).array;
+			}
+			if (arrayPrefix.length > arrayLength) {
+				throw new CompilationException(format!"Array not long enough error on line %d"(count(parse.input[0..parse.end], "\n") + 1));
+			}
+			foreach (i; arrayLength.iota.retro) {
+				assembly ~= format!"PUSH %d"(i < arrayPrefix.length ? arrayPrefix[i] : 0);
+				spShift++;
+			}
+			assembly ~= "LD IDX SP";
+			assembly ~= "PUSH IDX";
+			scopeStack[$-1] ~= LocalVar(parse[0].matches[0], spShift);
 			spShift++;
 			break;
 		case "PEXC.BlockStatement":
