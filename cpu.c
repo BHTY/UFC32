@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <conio.h>
+#include <stdlib.h>
 
 int programOld[512] = { 271, 1, 4239, 0, 2944 };
 int programOld2[512] = { 271, 1, 4239, 8, 2688, 4239, 0, 2944, 2304 };
@@ -23,7 +25,13 @@ int programOld2[512] = { 271, 1, 4239, 8, 2688, 4239, 0, 2944, 2304 };
 //unsigned int program[1024] = { 4239, 3, 2688, 687, 1, 4592, 511, 4111, 5, 4234, 4126, 4143, 1, 530, 4225, 4320, 431, 1, 2304 };
 //unsigned int program[1024] = { 4239, 24, 2688, 687, 1, 4234, 4320, 655, 1, 4321, 655, 1, 4264, 4234, 4110, 4234, 399, 1, 4126, 4225, 4320, 431, 3, 2304, 687, 1, 4111, 510, 4127, 10, 4239, 3, 2688, 2304 };
 //unsigned int program[1024] = { 4239, 26, 2688, 4234, 655, 1, 4320, 655, 1, 4321, 4264, 4234, 399, 2, 4110, 4234, 399, 1, 4126, 257, 431, 3, 2304, 431, 2, 2304, 4592, 511, 4111, 1, 4127, 2, 4239, 3, 2688, 4234, 399, 1, 4126, 4143, 1, 530, 4225, 4320, 431, 1, 2304 };
-unsigned int program[1024] = { 4239, 24, 2688, 4234, 655, 1, 4320, 655, 1, 4321, 4264, 4234, 399, 1, 4110, 4234, 4126, 257, 431, 3, 2304, 431, 2, 2304, 4592, 511, 4111, 1, 4127, 2, 4239, 3, 2688, 4234, 4126, 4143, 1, 530, 4225, 4320, 431, 1, 2304 };
+//unsigned int program[1024] = { 4239, 24, 2688, 4234, 655, 1, 4320, 655, 1, 4321, 4264, 4234, 399, 1, 4110, 4234, 4126, 257, 431, 3, 2304, 431, 2, 2304, 4592, 511, 4111, 1, 4127, 2, 4239, 3, 2688, 4234, 4126, 4143, 1, 530, 4225, 4320, 431, 1, 2304 };
+//unsigned int program[1024] = { 4239, 22, 2688, 4234, 655, 1, 4320, 655, 1, 4321, 4264, 4234, 4110, 4234, 399, 1, 4126, 4225, 4320, 431, 2, 2304, 4111, 510, 4127, 10, 4239, 3, 2688, 2304 };
+//unsigned int program[1024] = { 4239, 22, 2688, 4234, 655, 1, 4320, 655, 1, 4321, 4264, 4234, 4110, 4234, 399, 1, 4126, 4225, 4320, 431, 2, 2304, 4111, 511, 4127, 1, 513, 4127, 10, 4239, 3, 2688, 2304 };
+//unsigned int program[1024] = { 4239, 24, 2688, 4234, 655, 1, 4320, 655, 1, 4321, 4264, 4234, 399, 1, 4110, 4234, 4126, 257, 431, 3, 2304, 431, 2, 2304, 4592, 511, 4111, 1, 4127, 2, 4239, 3, 2688, 4234, 4126, 4143, 1, 530, 4225, 4320, 431, 1, 2304 };
+//unsigned int program[1024] = { 4239, 3, 2688, 4592, 0, 4592, 0, 4234, 399, 1, 4104, 4122, 4225, 4320, 4111, 5, 4234, 4126, 4225, 4320, 4234, 399, 1, 4110, 4127, 511, 4225, 4320, 431, 2, 2304 };
+unsigned int program[2048];
+
 unsigned int r0 = 0;
 unsigned int r1 = 0;
 unsigned int r2 = 0;
@@ -39,7 +47,7 @@ unsigned int flags = 0;
 unsigned int currentInstruction;
 unsigned int increment = 1;
 unsigned int arg1;
-unsigned int arg0;
+unsigned int arg0; //long on x64
 unsigned char nameArg0[20] = "";
 unsigned char nameArg1[20] = "";
 
@@ -272,8 +280,14 @@ void cpuStep() { //when do you clear/reset flags???????????????
 		if (*(unsigned int*)arg0 < arg1) {
 			flags = flags | 4;
 		}
+		else{
+			flags = flags & 251;
+		}
 		if (*(unsigned int*)arg0 == arg1) {
 			flags = flags | 1;
+		}
+		else {
+			flags = flags & 254;
 		}
 	}
 	else if ((currentInstruction & 1536) == 1536) { //ls
@@ -304,8 +318,14 @@ void cpuStep() { //when do you clear/reset flags???????????????
 		if ((*(unsigned int*)arg0) > oldArg0) { //set borrow flag
 			flags = flags | 4;
 		}
+		else {
+			flags = flags & 251;
+		}
 		if (*(unsigned int*)arg0 == 0) { //set zero flag
 			flags = flags | 1;
+		}
+		else {
+			flags = flags & 254;
 		}
 	}
 	else if ((currentInstruction & 256) == 256) { //add
@@ -317,6 +337,9 @@ void cpuStep() { //when do you clear/reset flags???????????????
 		//implement processor flag setting
 		if ((*(unsigned int*)arg0) < oldArg0) { //set overflow flag
 			flags = flags | 2;
+		}
+		else {
+			flags = flags & 253;
 		}
 	}
 	else {
@@ -336,11 +359,21 @@ void cpuStep() { //when do you clear/reset flags???????????????
 int main(int argc, char** argv) {
 	int t = 0;
 	int inst = 1;
+	//printf(argv[1]);
+	FILE *fp = fopen(argv[1], "rb");
+	fseek(fp, 0L, SEEK_END);
+	int sz = ftell(fp);
+	fseek(fp, 0L, SEEK_SET);
+	fread(program, 4, sz/4, fp);
+	int c;
 	while (1) {
 		printf("PC=%u r0=%u r1=%u r2=%u r3=%u r4=%u SP=%u IDX=%u Flags=%u Value=%u  ", pc, r0, r1, r2, r3, r4, sp, IDX, flags, program[510]);
 		//printf("%d: ", r0);
 		cpuStep();
-		if (t % inst == 0) { getch(); }
+		if (t % inst == 0) {
+			c = getch();
+			if (c == 32) { exit(0); }
+		}
 		t++;
 
 		/**if(pc==512){
