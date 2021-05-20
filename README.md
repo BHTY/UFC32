@@ -13,7 +13,7 @@ The remaining components to still be added include
 - For loops
 - Preprocessor
 - Comments (both C89 and C99 style)
-- Assigning a u32 to a char value (or array of char values)
+- Assigning a char value or array to a u32
 
 There are currently no plans to add support for structs, or any C++ features/constructs at this time.
 
