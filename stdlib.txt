@@ -8,3 +8,4 @@ Console Specific Functions
 
 Uploading Code to PEX-2
 Sprite Blitting
+Matrix Multiplication
