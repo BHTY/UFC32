@@ -10,102 +10,6 @@ CALL IDX
 RET
 LBL2: RET"""
 
-text = """LD r0 data
-LD r1 0
-LD r2 6
-LD IDX quicksort
-CALL IDX
-infloop: LD IDX infloop
-JMP IDX
-
-quicksort: CMP r2 r1
-LD IDX escape
-JLT IDX
-PUSH r0
-PUSH r1
-PUSH r2
-LD IDX partition
-CALL IDX
-LD r4 r0
-POP r2
-POP r1
-POP r0
-
-PUSH r0
-PUSH r1
-PUSH r2
-PUSH r4
-LD r2 r4
-LD IDX quicksort
-CALL IDX
-POP r4
-POP r2
-POP r1
-POP r0
-
-LD r4 r1
-ADD r1 1
-LD IDX quicksort
-CALL IDX
-RET
-
-partition: PUSH r1
-ADD r1 r2
-RS r1
-LD IDX r0
-ADD IDX r1
-LD r3 [IDX]
-POP r1
-SUB r1 1
-ADD r2 1
-
-loop: LD r1 r1
-
-innerloop1: ADD r1 1
-LD IDX r0
-ADD IDX r1
-LD r4 [IDX]
-CMP r3 r4
-LD IDX innerloop1
-JLT IDX
-
-innerloop2: SUB r2 1
-LD IDX r0
-ADD IDX r2
-LD r4 [IDX]
-CMP r4 r3
-LD IDX innerloop2
-JLT IDX
-
-CMP r2 r1
-LD IDX escape2
-JLT IDX
-JEQ IDX
-
-LD IDX r0
-ADD IDX r1
-LD r7 [IDX]
-LD IDX r0
-ADD IDX r2
-LD r6 [IDX]
-LD [IDX] r7
-LD IDX r0
-ADD IDX r1
-LD [IDX] r6
-
-LD IDX loop
-JMP IDX
-
-escape2: LD r0 r2
-escape: RET
-
-data: DB 0
-DB 4
-DB 1
-DB 3
-DB 5
-DB 2"""
-
 consts = {"r0": 0, "r1": 1, "r2": 2, "r3": 3, "r4": 4, "r5": 5, "r6": 6,
           "r7": 7, "IDX": 8, "SP": 10, "[IDX]": 14}
 instructions = {"LD": 0x1000, "ADD": 0x100, "SUB": 0x200, "MUL": 0x300,
@@ -189,6 +93,7 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
     for i in string:
         instsize = 1
         temp = i.split(" ")
+        #print(temp)
         if "DB" in temp:
             pass
         elif len(temp) > 2:
@@ -202,13 +107,15 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
                 if len(temp) == 3:
                     if temp[2] not in consts:
                         instsize += 1
-        if len(temp) == 3 and temp[1][0] == "J" or len(temp) == 2 and temp[0][0] == "J":
+        if len(temp) == 3 and temp[1][0] == "J" and temp[2] not in consts or len(temp) == 2 and temp[0][0] == "J" and temp[1] not in consts:
             instsize += 1
         if temp[0] != "":
             if temp[0][-1] == ":":
                 labels[temp[0][0:-1]] = pc
+                if len(temp) == 1: instsize=0
         elif len(temp) == 2:
             if temp[1] not in consts:
+                print(temp)
                 instsize += 1
         else: instsize = 0
         print(i, " instruction size ", instsize)
@@ -308,7 +215,8 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
 
                     
         if len(temp) == 1 and temp[0] != "":
-            program.append(instructions[temp[0]])
+            if temp[0][-1] != ":":  program.append(instructions[temp[0]])
+            else: pass
         pc+=1
 
     return program, labels
@@ -364,3 +272,4 @@ for i in info:
     print(i)
 
 file.close()"""
+
