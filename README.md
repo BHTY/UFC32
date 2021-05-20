@@ -19,6 +19,7 @@ There are currently no plans to add support for structs, or any C++ features/con
 
 
 **Usage**
+
 You'll need to compile the C compiler using your D compiler of choice. For example, using DMD, type the commands "dub build" in the compiler directory. Once it's built, use the following syntax to compile your code: compiler _input.pexc_ _output.pexs_
 
 Once you have an assembly language file, you can look at or edit the file in any standard ASCII text editor, potentially performing manual optimizations, but generally you'll want to assemble it. To do this, copy your _output.pexs_ file into the directory with asm.py (or vice-versa), and then, assuming Python is in your path environment variable, run the following command: python asm.py _output.pexs_ _output.bin_
