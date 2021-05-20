@@ -1,3 +1,5 @@
+import sys
+
 text = """ADD r0 1
 LD IDX LBL1
 CALL IDX
@@ -201,6 +203,9 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
         if temp[0] != "":
             if temp[0][-1] == ":":
                 labels[temp[0][0:-1]] = pc
+        elif len(temp) == 2:
+            if temp[1] not in consts:
+                instsize += 1
         else: instsize = 0
         pc += instsize
 
@@ -296,3 +301,25 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
         pc+=1
 
     return program, labels
+
+file = open(sys.argv[1], "r+")
+text = file.read()
+file.close()
+binary = assemble(text)[0]
+newbin = []
+
+#convert binary to 8-bit
+for i in binary:
+    lowest = i & 255 #least signifigant bits
+    lower = (i & 65280) >> 8 #second-least
+    low = (i & 16711680) >> 16 #second highest
+    highest = (i & 4278190080) >> 24 #highest
+
+    newbin.append(highest)
+    newbin.append(low)
+    newbin.append(lower)
+    newbin.append(lowest)
+
+file = open(sys.argv[2], "wb")
+file.write(bytes(newbin))
+file.close()
