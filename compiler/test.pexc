@@ -1,4 +1,7 @@
 void main() {
-	u32 array[10] = {1, 2, 3, 4, 5};
-	u32 x = array[2];
+	u32 x;
+	u32 s;
+	for (x = 0; x < 10; x++) {
+		s += x;
+	}
 }

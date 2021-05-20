@@ -33,12 +33,12 @@ mixin(grammar(`PEXC:
 	ArgumentList < "(" (Argument ("," Argument)*)? ")"
 	Argument < "u32" ^identifier
 	CallArgumentList < "(" (RValue ("," RValue)*)? ")"
-	Statement < BlockStatement / LocalDecl / LocalArrayDecl / ExpressionStatement / ReturnStatement / InlineAsmStatement / IfStatement
+	Statement < BlockStatement / LocalDecl / LocalArrayDecl / ExpressionStatement ";" / ReturnStatement / InlineAsmStatement / IfStatement / WhileStatement / DoStatement / ForStatement
 	LocalDecl < "u32" identifier ("=" RValue)? ";"
 	LocalArrayDecl < "u32" ^identifier "[" (IntLiteral) ? "]" ("=" (ArrayLiteral / StringLiteral))? ";"
 	BlockStatement < "{" Statement* "}"
-	ExpressionStatement < (LValue ^("=" / "+=" / "-=" / "*=" / "/=" / "&=" / "|=" / "<<=" / ">>="))? RValue ";"
-	LValue < ^identifier / "*" ExprAtom
+	ExpressionStatement < (LValue ^("=" / "+=" / "-=" / "*=" / "/=" / "&=" / "|=" / "<<=" / ">>="))? RValue
+	LValue < "*" ExprAtom / ^identifier ("[" RValue "]")*
 	RValue < ExprLogOr ("?" RValue ":" RValue)?
 	ExprLogOr < ExprLogAnd ("||" ExprLogOr)?
 	ExprLogAnd < ExprBitOr ("&&" ExprLogAnd)?
@@ -52,11 +52,14 @@ mixin(grammar(`PEXC:
 	ExprMul < ExprPrefixes (^("*" / "/") ExprMul)?
 	ExprPrefixes < (^("~" / "!" / "+" / "-"/ "*"))* ExprIndexed
 	ExprIndexed < ExprAtom ("[" RValue "]")*
-	ExprAtom < IntLiteral / "(" RValue ")" / ^identifier CallArgumentList / ("++" / "--" / "&")? ^identifier / ^identifier ("++" / "--")?
+	ExprAtom < IntLiteral / "(" RValue ")" / ^identifier CallArgumentList / ("++" / "--" / "&") ^identifier / ^identifier ("++" / "--")?
 	ReturnStatement < "return" RValue ";"
 	InlineAsmStatement < "asm" "{" InlineAsm "}" ";"
 	InlineAsm <- ~((!'}' .)*)
-	IfStatement < "if" "(" RValue ")" Statement ("else" Statement)?`));
+	IfStatement < "if" "(" RValue ")" Statement ("else" Statement)?
+	WhileStatement < "while" "(" RValue ")" Statement
+	DoStatement < "do" Statement "while" "(" RValue ")" ";"
+	ForStatement < "for" "(" ExpressionStatement ";" RValue ";" ExpressionStatement ")" Statement`));
 
 string[] assembly;
 void main(string[] argv) {
@@ -80,7 +83,7 @@ void main(string[] argv) {
 	foreach(line; assembly) {
 		outtxt ~= line ~ "\n";
 	}
-	outfile.write(outtxt.replace(":\n",": "));
+	outfile.write(outtxt);
 	outfile.close();
 	
 }
@@ -302,6 +305,12 @@ void bfp(ParseTree parse) {
 					} else {
 						throw new CompilationException(format!"Variable not declared error on line %d"(count(parse.input[0..parse.end], "\n") + 1));
 					}
+				}
+				foreach(idx; parse[1..$]) {
+					bfp(idx);
+					assembly ~= format!"LD IDX r%d"(pseudoStackSize-2);
+					assembly ~= format!"LD r%d [IDX]"(pseudoStackSize-2);
+					assembly ~= format!"ADD r%d r%d"(pseudoStackSize-2, --pseudoStackSize);
 				}
 			}
 			break;
@@ -582,6 +591,38 @@ void bfp(ParseTree parse) {
 			} else {
 				assembly ~= format!"l%d:"(firstLabel);
 			}
+			break;
+		case "PEXC.WhileStatement":
+			int firstLabel = labelNum;
+			assembly ~= format!"l%d:"(labelNum++);
+			bfp(parse[0]);
+			assembly ~= format!"CMP r%d 0"(--pseudoStackSize);
+			assembly ~= format!"JEQ l%d"(labelNum);
+			int secondLabel = labelNum++;
+			bfp(parse[1]);
+			assembly ~= format!"JMP l%d"(firstLabel);
+			assembly ~= format!"l%d:"(secondLabel);
+			break;
+		case "PEXC.DoStatement":
+			assembly ~= format!"l%d:"(labelNum);
+			int firstLabel = labelNum++;
+			bfp(parse[0]);
+			bfp(parse[1]);
+			assembly ~= format!"CMP r%d 0"(--pseudoStackSize);
+			assembly ~= format!"JNE l%d"(firstLabel);
+			break;
+		case "PEXC.ForStatement":
+			bfp(parse[0]);
+			int firstLabel = labelNum++;
+			assembly ~= format!"l%d:"(firstLabel);
+			bfp(parse[1]);
+			assembly ~= format!"CMP r%d 0"(--pseudoStackSize);
+			int secondLabel = labelNum++;
+			assembly ~= format!"JEQ l%d"(secondLabel);
+			bfp(parse[3]);
+			bfp(parse[2]);
+			assembly ~= format!"JMP l%d"(firstLabel);
+			assembly ~= format!"l%d:"(secondLabel);
 			break;
 		default:
 			foreach(child; parse) {
