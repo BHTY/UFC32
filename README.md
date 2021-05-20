@@ -13,3 +13,5 @@ The remaining components to still be added include
 - Preprocessor
 - Comments (both C89 and C99 style)
 - Assigning a u32 to a char value (or array of char values)
+
+There are currently no plans to add support for structs, or any C++ features/constructs at this time.
