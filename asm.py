@@ -214,7 +214,7 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
 
     #second pass to assemble code
     for i in string:
-        print("{}: {}".format(pc, i))
+        #print("{}: {}".format(pc, i))
         instsize = 1
         temp = i.split(" ")
 
@@ -314,12 +314,41 @@ for i in binary:
     lower = (i & 65280) >> 8 #second-least
     low = (i & 16711680) >> 16 #second highest
     highest = (i & 4278190080) >> 24 #highest
+    #print(i)
 
-    newbin.append(highest)
-    newbin.append(low)
-    newbin.append(lower)
+    #newbin.append(highest)
+    #newbin.append(low)
+    #newbin.append(lower)
+    #newbin.append(lowest)
     newbin.append(lowest)
+    newbin.append(lower)
+    newbin.append(low)
+    newbin.append(highest)
 
 file = open(sys.argv[2], "wb")
 file.write(bytes(newbin))
 file.close()
+
+i = 0
+
+thing = bytes(newbin)
+extra = []
+
+while i < len(thing):
+    #bin = thing[i] + thing[i+1]*256 + thing[i+2]*65536 + thing[i+3]*(2**24)
+    bin = thing[i]*(2**24) + thing[i+1]*65536 + thing[i+2]*256 + thing[i+3]
+    extra.append(bin)
+    i += 4
+#print(extra==binary)
+
+for i in range(len(binary)):
+    #print("{} | {}".format(binary[i], extra[i]))
+    pass
+
+"""file = open(sys.argv[2], "rb")
+info = file.read()
+
+for i in info:
+    print(i)
+
+file.close()"""
