@@ -245,7 +245,10 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
                 if temp[2] in consts: #non-immediate value
                     program.append((instructions[temp[1]] + (consts[temp[2]] << 4)))
                 elif temp[1] == "DB": #define dword
-                    program.append(int(temp[2]))
+                    if temp[2].isdigit():
+                        program.append(int(temp[2]))
+                    if temp[2] in labels:
+                        program.append(labels[temp[2]])
                 elif temp[2][0] != "[": #imm
                     program.append((instructions[temp[1]] + (15 << 4)))
                     try: program.append(int(temp[2]))
@@ -282,7 +285,10 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
                 program.append(instructions[temp[1]])
 
             elif temp[0] == "DB": #define dword
-                program.append(int(temp[1]))
+                if temp[1].isdigit():
+                    program.append(int(temp[1]))
+                if temp[1] in labels:
+                    program.append(labels[temp[1]])
                 
             else: #instruction with just op0
                 if temp[1] in consts: #non-immediate value
