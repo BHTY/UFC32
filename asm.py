@@ -92,8 +92,9 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
     #first pass to detect labels
     for i in string:
         instsize = 1
-        temp = i.split(" ")
         #print(temp)
+        """
+        temp = i.split(" ")
         if "DB" in temp:
             pass
         elif len(temp) > 2:
@@ -118,8 +119,16 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
                 labels[temp[0][0:-1]] = pc
                 if len(temp) == 1: instsize=0
         else: instsize = 0
-        print(i, " instruction size ", instsize)
+        """
+        if ":" in i:
+            labels[i[:-1]] = pc
+            instsize = 0
+        else:
+            for op in i.split(" ")[1:]:
+                if op not in consts:
+                    instsize += 1
         pc += instsize
+        print(i, " instruction size ", instsize)
 
     pc = 0
     #return labels

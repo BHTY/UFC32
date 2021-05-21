@@ -1,7 +1,5 @@
 void main() {
-	u32 x;
-	u32 s;
-	for (x = 0; x < 10; x++) {
-		s += x;
+	u32 i;
+	for(i = 0; i < 10; i++) {
 	}
 }
