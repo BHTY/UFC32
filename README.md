@@ -8,9 +8,9 @@ The C compiler is found in the "compiler" folder and currently supports the foll
 - Conditional statements (if/else) 
 - Local and global arrays
 - Loops (while and for)
+- Inline ASM
 
 The remaining components to still be added include
-- Inline ASM
 - Preprocessor
 - Comments (both C89 and C99 style)
 - Assigning a char value or array to a u32
