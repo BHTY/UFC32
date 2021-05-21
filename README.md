@@ -12,10 +12,12 @@ The C compiler is found in the "compiler" folder and currently supports the foll
 
 The remaining components to still be added include
 - Preprocessor
-- Comments (both C89 and C99 style)
+- Comments (both C89/C90 and C99 style)
 - Assigning a char value or array to a u32
+- C99-style for loops (declare variable while declaring for loop)
+- C99-style VLAs (Variable Length Arrays)
 
-There are currently no plans to add support for structs/unions, or any C++ features/constructs at this time. Additionally, as with C89/C90 (but not C99 or C++), you cannot declare a variable as part of the parenthesis defining a for loop. You must declare the variable above and then define it for the loop.
+There are currently no plans to add support for structs/unions, or any C++ features/constructs at this time. 
 
 
 
