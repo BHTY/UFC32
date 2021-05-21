@@ -120,6 +120,8 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
                 if len(temp) == 1: instsize=0
         else: instsize = 0
         """
+        if "DB" in i:
+            instsize = 0
         if ":" in i:
             labels[i[:-1]] = pc
             instsize = 0

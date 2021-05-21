@@ -148,7 +148,7 @@ void bfp(ParseTree parse) {
 				assembly ~= format!"ADD SP %d"(spShift);
 			}
 			assembly ~= "RET";
-			scopeStack = scopeStack[1..$];
+			scopeStack = scopeStack[0..$-1];
 			break;
 		case "PEXC.LocalDecl":
 			scopeStack[$-1] ~= LocalVar(parse.matches[1], spShift);
@@ -199,7 +199,7 @@ void bfp(ParseTree parse) {
 				assembly ~= format!"ADD SP %d"(spShift - oldSpShift);
 				spShift = oldSpShift;
 			}
-			scopeStack = scopeStack[1..$];
+			scopeStack = scopeStack[0..$-1];
 			break;
 		case "PEXC.ExprAtom":
 			if (pseudoStackSize > 7) {
@@ -258,6 +258,7 @@ void bfp(ParseTree parse) {
 					if (globalSymbols.canFind(varName)) {
 						assembly ~= format!"LD IDX %s"(varName);
 					} else {
+						writeln(scopeStack);
 						throw new CompilationException(format!"Variable not declared error on line %d"(count(parse.input[0..parse.end], "\n") + 1));
 					}
 				}
