@@ -109,14 +109,14 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
                         instsize += 1
         if len(temp) == 3 and temp[1][0] == "J" and temp[2] not in consts or len(temp) == 2 and temp[0][0] == "J" and temp[1] not in consts:
             instsize += 1
-        if temp[0] != "":
-            if temp[0][-1] == ":":
-                labels[temp[0][0:-1]] = pc
-                if len(temp) == 1: instsize=0
-        elif len(temp) == 2:
+        if len(temp) == 2:
             if temp[1] not in consts:
                 print(temp)
                 instsize += 1
+        elif temp[0] != "":
+            if temp[0][-1] == ":":
+                labels[temp[0][0:-1]] = pc
+                if len(temp) == 1: instsize=0
         else: instsize = 0
         print(i, " instruction size ", instsize)
         pc += instsize
