@@ -1,0 +1,10 @@
+Chapter 1: Hardware Outline & Memory Map
+Chapter 2: Your First Program - Static Object
+Chapter 3: Reading the Controller and Moving Graphics
+Chapter 4: Creating Visual Assets
+Chapter 5: Generating Sound
+Chapter 6: A Basic Game
+
+Advanced
+Chapter A1: Introduction to PEX-2 & Custom Rasterizers
+Chapter A2: Using Assembly
