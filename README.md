@@ -19,7 +19,7 @@ The remaining components to still be added include
 - Signed 32-bit integers
 - switch case
 
-There are currently no plans to add support for structs/unions, enums, gotos, or any C++ features/constructs at this time. 
+There are currently no plans to add support for structs/unions, enums, gotos, or any C++ features/constructs at this time. Additionally, the only type available currently is **u32** - an unsigned 32-bit integer, and memory accesses are DWORD-aligned.
 
 
 
