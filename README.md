@@ -11,7 +11,7 @@ The C compiler is found in the "compiler" folder and currently supports the foll
 - Inline ASM
 
 The remaining components to still be added include
-- Preprocessor
+- Minimal preprocessor
 - Comments (both C89/C90 and C99 style)
 - Assigning a char value or array to a u32
 - C99-style for loops (declare variable while declaring for loop)
