@@ -110,7 +110,7 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
         if len(temp) == 3 and temp[1][0] == "J" and temp[2] not in consts or len(temp) == 2 and temp[0][0] == "J" and temp[1] not in consts:
             instsize += 1
         if len(temp) == 2:
-            if temp[1] not in consts:
+            if temp[1] not in consts and temp[0][-1] != ":":
                 print(temp)
                 instsize += 1
         elif temp[0] != "":
