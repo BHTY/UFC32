@@ -7,4 +7,4 @@ Chapter 6: A Basic Game
 
 Advanced
 Chapter A1: Introduction to PEX-2 & Custom Rasterizers
-Chapter A2: Using Assembly
+Chapter A2: Using Assembly & Beyond
