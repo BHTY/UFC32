@@ -44,7 +44,7 @@ mixin(grammar(`PEXC:
 	ExprLogAnd < ExprBitOr ("&&" ExprLogAnd)?
 	ExprBitOr < ExprBitXor ("|" ExprBitOr)?
 	ExprBitXor < ExprBitAnd ("^" ExprBitXor)?
-	ExprBitAnd < ExprEq ("&" ExprBitAnd)?
+	ExprBitAnd < ExprEq (!"&&" "&" ExprBitAnd)?
 	ExprEq < ExprCmp (^("==" / "!=") ExprEq)?
 	ExprCmp < ExprShift (^("<=" / ">=" / "<" / ">") ExprCmp)?
 	ExprShift < ExprAdd (^("<<" / ">>") ExprShift)?
