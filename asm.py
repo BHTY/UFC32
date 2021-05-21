@@ -137,7 +137,9 @@ def assemble(string): #todo - DEFINE macros and CONSTANTS and DB statements
     for i in string:
         #print("{}: {}".format(pc, i))
         instsize = 1
-        temp = i.split(" ")
+        temp = i.strip().split(" ")
+        if len(i.strip()) == 0:
+            continue
 
         if len(temp) == 4: #inst with two ops and a label
             if temp[2] in consts:
