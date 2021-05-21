@@ -4,6 +4,7 @@ strcmp / memcmp
 strcpy / memcpy
 malloc / free
 sprintf
+memset
 
 Console Specific Functions
 
