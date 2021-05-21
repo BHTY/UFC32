@@ -7,10 +7,10 @@ The C compiler is found in the "compiler" folder and currently supports the foll
 - Functions
 - Conditional statements (if/else) 
 - Local and global arrays
-- While loops
+- While loops (currently buggy)
 
 The remaining components to still be added include
-- For loops
+- For loops (implemented but broken)
 - Inline ASM
 - Preprocessor
 - Comments (both C89 and C99 style)
