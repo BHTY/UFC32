@@ -2,6 +2,7 @@ Standard Library Functions
 
 strcmp / memcmp
 strcpy / memcpy
+malloc / free
 sprintf
 
 Console Specific Functions
