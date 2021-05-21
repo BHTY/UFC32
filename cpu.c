@@ -193,7 +193,20 @@ void cpuStep() { //when do you clear/reset flags???????????????
 	}
 
 	//detect and execute instruction - switch case would be better
-	if ((currentInstruction & 5632) == 5632) { //CLF
+	if ((currentInstruction & 5888) == 5888) { //cmps
+		if (logging) {
+			printf("CMPS %s %s\n", nameArg0, nameArg1);
+		}
+		//printf("CMP %d %d\n", *(unsigned int*)arg0, arg1);
+		flags = 0;
+		if (*(int*)arg0 < arg1) {
+			flags = flags | 4;
+		}
+		if (*(int*)arg0 == arg1) {
+			flags = flags | 1;
+		}
+	}
+	else if ((currentInstruction & 5632) == 5632) { //CLF
 		if (logging) {
 			printf("CLF\n");
 		}
