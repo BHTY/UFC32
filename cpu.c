@@ -225,10 +225,10 @@ void cpuStep() { //when do you clear/reset flags???????????????
 			increment = 0;
 		}
 	}
-	else if ((currentInstruction & 3584) == 3584) { //jgt
+	else if ((currentInstruction & 3584) == 3584) { //jgt - fix this
 		printf("JGT %s\n", nameArg0);
 		//printf("JEQ %d\n", *(unsigned int*)arg0);
-		if (!((flags&5)==5)) {
+		if (!((flags&1)==1) && !((flags&4)==4)) {
 			pc = *(unsigned int*)arg0;
 			increment = 0;
 		}
@@ -277,17 +277,12 @@ void cpuStep() { //when do you clear/reset flags???????????????
 	else if ((currentInstruction & 1792) == 1792) { //cmp
 		printf("CMP %s %s\n", nameArg0, nameArg1);
 		//printf("CMP %d %d\n", *(unsigned int*)arg0, arg1);
+		flags = 0;
 		if (*(unsigned int*)arg0 < arg1) {
 			flags = flags | 4;
 		}
-		else{
-			flags = flags & 251;
-		}
 		if (*(unsigned int*)arg0 == arg1) {
 			flags = flags | 1;
-		}
-		else {
-			flags = flags & 254;
 		}
 	}
 	else if ((currentInstruction & 1536) == 1536) { //ls
@@ -315,17 +310,12 @@ void cpuStep() { //when do you clear/reset flags???????????????
 		int oldArg0 = *(unsigned int*)arg0;
 		//printf("Partially-implemented SUB %d %d\n", *(unsigned int*)arg0, arg1);
 		*(unsigned int*)arg0 = *(unsigned int*)arg0 - arg1;
+		flags = 0;
 		if ((*(unsigned int*)arg0) > oldArg0) { //set borrow flag
 			flags = flags | 4;
 		}
-		else {
-			flags = flags & 251;
-		}
 		if (*(unsigned int*)arg0 == 0) { //set zero flag
 			flags = flags | 1;
-		}
-		else {
-			flags = flags & 254;
 		}
 	}
 	else if ((currentInstruction & 256) == 256) { //add
@@ -334,12 +324,10 @@ void cpuStep() { //when do you clear/reset flags???????????????
 		int oldArg0 = *(unsigned int*)arg0;
 		//printf("ADD %d %d\n", *(unsigned int*)arg0, arg1);
 		*(unsigned int*)arg0 = *(unsigned int*)arg0 + arg1;
+		flags = 0;
 		//implement processor flag setting
 		if ((*(unsigned int*)arg0) < oldArg0) { //set overflow flag
 			flags = flags | 2;
-		}
-		else {
-			flags = flags & 253;
 		}
 	}
 	else {
