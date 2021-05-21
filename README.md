@@ -15,7 +15,7 @@ The remaining components to still be added include
 - Comments (both C89 and C99 style)
 - Assigning a char value or array to a u32
 
-There are currently no plans to add support for structs/unions, or any C++ features/constructs at this time.
+There are currently no plans to add support for structs/unions, or any C++ features/constructs at this time. Additionally, as with C89/C90 (but not C99 or C++), you cannot declare a variable as part of the parenthesis defining a for loop. You must declare the variable above and then define it for the loop.
 
 
 
