@@ -17,6 +17,7 @@ The remaining components to still be added include
 - C99-style for loops (declare variable while declaring for loop)
 - C99-style VLAs (Variable Length Arrays)
 - Signed 32-bit integers
+- switch case
 
 There are currently no plans to add support for structs/unions, enums, gotos, or any C++ features/constructs at this time. 
 
