@@ -1,6 +1,6 @@
 Standard Library Functions
 
-Minimal memory manager
+Minimal dynamic memory manager
 strcmp / memcmp
 strcpy / memcpy
 sprintf
