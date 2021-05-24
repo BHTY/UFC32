@@ -8,7 +8,7 @@ memset
 
 Console Specific Functions
 
-Uploading Code to PEX-2
+Uploading Code to PEX-2 and beginning execution
 Sprite Blitting
 
 PEX-2 Standard Rasterizer
