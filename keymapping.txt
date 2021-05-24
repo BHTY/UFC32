@@ -1,0 +1,13 @@
+SNES Button to Keyboard Key Conversion
+Up      Up / W
+Down    Down / S
+Left    Left / A
+Right   Right / D
+A       Z
+B       X
+X       C
+Y       V
+L       Q
+R       E
+Start   Enter
+Select  Space
