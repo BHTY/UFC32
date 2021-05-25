@@ -59,6 +59,7 @@ unsigned int arg0P2; //long on x64
 unsigned char nameArg0P2[20] = "";
 unsigned char nameArg1P2[20] = "";
 int opsCPU2 = 0;
+int loggingP2 = 0;
 
 void cvtNum(int num, char* string) {
 	for (int i = 0; i < 12; i++) {
@@ -74,9 +75,9 @@ void cvtNum(int num, char* string) {
 
 unsigned int MMUgetPtrP1(int addr) {
 	if (addr < 4194304) { return (unsigned int)&program[addr]; }
-	if ((addr > 4194303) && (addr < 4718592)) { return (unsigned int)&RAM[addr - 4194304]; }
-	if ((addr > 4718591) && (addr < 4816896)) { return (unsigned int)&PEX2RAM[addr - 4718592]; }
-	if (addr == 4816896) { return (unsigned int)&joypress; }
+	else if ((addr > 4194303) && (addr < 4718592)) { return (unsigned int)&RAM[addr - 4194304]; }
+	else if ((addr > 4718591) && (addr < 4816896)) { return (unsigned int)&PEX2RAM[addr - 4718592]; }
+	else if (addr == 4816896) { return (unsigned int)&joypress; }
 	//sound registers here
 }
 
@@ -93,7 +94,12 @@ unsigned int MMUgetPtrP2(int addr) {
 }
 
 int MMUgetValP2(int addr) {
-	return PEX2RAM[addr];
+	if (addr < (168 * 1024)) { return PEX2RAM[addr]; }
+	else {
+		printf("This message should never appear. What shall I do if it does?\n");
+		printf("%d\n", addr);
+		while(1){}
+	}
 }
 
 void cpuStep();
@@ -104,7 +110,7 @@ int counterFunc(void* data) {
 	while (1) {
 		//Sleep(1000);
 		SDL_Delay(1000);
-		printf("PEX-1: %d MIPS\n", opsCPU1/(1000*1000));
+		//printf("PEX-1: %d MIPS\n", opsCPU1/(1000*1000));
 		opsCPU1 = 0;
 	}
 	return 0;
@@ -112,9 +118,16 @@ int counterFunc(void* data) {
 
 int threadFunction(void* data) {
 	while (1) {
-		if (logging) { printf("PC=%u r0=%u r1=%u r2=%u r3=%u r4=%u SP=%u IDX=%u Flags=%u  ", pc, r0, r1, r2, r3, r4, sp, IDX, flags); }
+		if (logging) { printf("PEX1: PC=%u r0=%u r1=%u r2=%u r3=%u r4=%u SP=%u IDX=%u Flags=%u  ", pc, r0, r1, r2, r3, r4, sp, IDX, flags); }
+		/**if (pc == 47) {
+			for (int i = 0; i < 25; i++) {
+				printf("%d: %d\n", i, PEX2RAM[i]);
+			}
+		}**/
 		cpuStep();
-		if (PEX2RUNNING) { cpuStepP2(); }
+		if (PEX2RUNNING) { 
+			if (loggingP2) { printf("\nPEX2: PC=%u r0=%u r1=%u r2=%u r3=%u r4=%u SP=%u IDX=%u Flags=%u  ", pcP2, r0P2, r1P2, r2P2, r3P2, r4P2, spP2, IDXP2, flagsP2); }
+			cpuStepP2(); }
 	}
 }
 
@@ -214,7 +227,7 @@ void cpuStep() { //when do you clear/reset flags??????????????? - add INT to sta
 	}
 	else if ((currentInstruction & 14) == 14) { //op1=[idx]
 		//arg1 = program[IDX];
-		arg1 = MMUgetPtrP1(IDX);
+		arg1 = MMUgetValP1(IDX);
 		if (logging) {
 			sprintf((char*)nameArg1, "[IDX](%d:%d)", IDX, arg1);
 		}
@@ -540,75 +553,75 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 		//arg0 = (unsigned int)&program[pcP2 + 1];
 		arg0P2 = MMUgetPtrP2(pcP2 + 1);
 		//itoa(*(int *)arg0P2, (char *)nameArg0P2, 10);
-		if (logging) { sprintf((char*)nameArg0P2, "%d", *(int*)arg0P2); }
+		if (loggingP2) { sprintf((char*)nameArg0P2, "%d", *(int*)arg0P2); }
 		incrementP2 += 1;
 	}
 	else if ((currentInstructionP2 & 224) == 224) {//op0=[idx]
 		//arg0P2P2 = (unsigned int)&program[IDXP2];
 		arg0P2 = MMUgetPtrP2(IDXP2);
-		if (logging) { sprintf((char*)nameArg0P2, "[IDXP2](%d:%d)", IDXP2, *(int*)arg0P2); }
+		if (loggingP2) { sprintf((char*)nameArg0P2, "[IDXP2](%d:%d)", IDXP2, *(int*)arg0P2); }
 	}
 	else if ((currentInstructionP2 & 176) == 176) { //op0=flagsP2
 		arg0P2 = (unsigned int)&flagsP2;
-		if (logging) { sprintf((char*)nameArg0P2, "FLAGS(%d)", *(int*)arg0P2); }
+		if (loggingP2) { sprintf((char*)nameArg0P2, "FLAGS(%d)", *(int*)arg0P2); }
 	}
 	else if ((currentInstructionP2 & 160) == 160) { //op0=sp
 		arg0P2 = (unsigned int)&spP2;
-		if (logging) { sprintf((char*)nameArg0P2, "SP(%d)", *(int*)arg0P2); }
+		if (loggingP2) { sprintf((char*)nameArg0P2, "SP(%d)", *(int*)arg0P2); }
 	}
 	else if ((currentInstructionP2 & 144) == 144) {//op0=[imm]
 		//arg0P2 = (unsigned int)&program[program[pcP2 + 1]];
 		arg0P2 = MMUgetPtrP2(MMUgetValP2(pcP2 + 1));
 		incrementP2 += 1;
-		//if (logging) { sprintf((char*)nameArg0P2, "[%d](%d)", program[pcP2 + 1], *(int*)arg0P2); }
-		if (logging) { sprintf((char*)nameArg0P2, "[%d](%d)", MMUgetValP2(pcP2 + 1), *(int*)arg0P2); }
+		//if (loggingP2) { sprintf((char*)nameArg0P2, "[%d](%d)", program[pcP2 + 1], *(int*)arg0P2); }
+		if (loggingP2) { sprintf((char*)nameArg0P2, "[%d](%d)", MMUgetValP2(pcP2 + 1), *(int*)arg0P2); }
 	}
 	else if ((currentInstructionP2 & 128) == 128) { //op0=idx
 		arg0P2 = (unsigned int)&IDXP2;
 		//printf("op0 is IDXP2 when PC=%d and current instruction is %d, don't forget %d\n",pcP2, currentInstructionP2, currentInstructionP2&128);
-		if (logging) { sprintf((char*)nameArg0P2, "IDXP2(%d)", *(int*)arg0P2); }
+		if (loggingP2) { sprintf((char*)nameArg0P2, "IDXP2(%d)", *(int*)arg0P2); }
 	}
 	else if ((currentInstructionP2 & 112) == 112) { //op0=r7P2
 		arg0P2 = (unsigned int)&r7P2;
-		if (logging) { sprintf((char*)nameArg0P2, "r7P2(%d)", *(int*)arg0P2); }
+		if (loggingP2) { sprintf((char*)nameArg0P2, "r7P2(%d)", *(int*)arg0P2); }
 	}
 	else if ((currentInstructionP2 & 96) == 96) { //op0=r6P2
 		arg0P2 = (unsigned int)&r6P2;
-		if (logging) { sprintf((char*)nameArg0P2, "r6P2(%d)", *(int*)arg0P2); }
+		if (loggingP2) { sprintf((char*)nameArg0P2, "r6P2(%d)", *(int*)arg0P2); }
 	}
 	else if ((currentInstructionP2 & 80) == 80) { //op0=r5P2
 		arg0P2 = (unsigned int)&r5P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg0P2, "r5P2(%d)", *(int*)arg0P2);
 		}
 	}
 	else if ((currentInstructionP2 & 64) == 64) { //op0=r4P2
 		arg0P2 = (unsigned int)&r4P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg0P2, "r4P2(%d)", *(int*)arg0P2);
 		}
 	}
 	else if ((currentInstructionP2 & 48) == 48) { //op0=r3P2
 		arg0P2 = (unsigned int)&r3P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg0P2, "r3P2(%d)", *(int*)arg0P2);
 		}
 	}
 	else if ((currentInstructionP2 & 32) == 32) { //op0=r2P2
 		arg0P2 = (unsigned int)&r2P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg0P2, "r2P2(%d)", *(int*)arg0P2);
 		}
 	}
 	else if ((currentInstructionP2 & 16) == 16) { //op0=r1P2
 		arg0P2 = (unsigned int)&r1P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg0P2, "r1P2(%d)", *(int*)arg0P2);
 		}
 	}
 	else if ((currentInstructionP2 & 0) == 0) { //op0=r0P2
 		arg0P2 = (unsigned int)&r0P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg0P2, "r0P2(%d)", *(int*)arg0P2);
 		}
 	}
@@ -619,7 +632,7 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 		//arg1P2 = program[pcP2 + 1];
 		arg1P2 = MMUgetValP2(pcP2 + 1);
 		//itoa(arg1P2, (char*)nameArg1P2, 10);
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "%d", arg1P2);
 		}
 		incrementP2 += 1;
@@ -627,19 +640,19 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 	else if ((currentInstructionP2 & 14) == 14) { //op1=[idx]
 		//arg1P2 = program[IDXP2];
 		arg1P2 = MMUgetPtrP2(IDXP2);
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "[IDXP2](%d:%d)", IDXP2, arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 11) == 11) { //op1=flagsP2
 		arg1P2 = flagsP2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "FLAGS(%d)", arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 10) == 10) { //op1=sp
 		arg1P2 = spP2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "SP(%d)", arg1P2);
 		}
 	}
@@ -647,75 +660,75 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 		//arg1P2 = program[program[pcP2 + 1]];
 		arg1P2 = MMUgetValP2(MMUgetValP2(pcP2 + 1));
 		incrementP2 += 1;
-		if (logging) {
+		if (loggingP2) {
 			//sprintf((char*)nameArg1P2, "[%d](%d)", program[pcP2 + 1], arg1P2);
 			sprintf((char*)nameArg1P2, "[%d](%d)", MMUgetValP2(pcP2 + 1), arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 8) == 8) { //op1=idx
 		arg1P2 = IDXP2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "IDXP2(%d)", arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 7) == 7) { //op1=r7P2
 		arg1P2 = r7P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "r7P2(%d)", arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 6) == 6) { //op1=r6P2
 		arg1P2 = r6P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "r6P2(%d)", arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 5) == 5) { //op1=r5P2
 		arg1P2 = r5P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "r5P2(%d)", arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 4) == 4) { //op1=r4P2
 		arg1P2 = r4P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "r4P2(%d)", arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 3) == 3) { //op1=r3P2
 		arg1P2 = r3P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "r3P2(%d)", arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 2) == 2) { //op1=r2P2
 		arg1P2 = r2P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "r2P2(%d)", arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 1) == 1) { //op1=r1P2
 		arg1P2 = r1P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "r1P2(%d)", arg1P2);
 		}
 	}
 	else if ((currentInstructionP2 & 0) == 0) { //op1=r0P2
 		arg1P2 = r0P2;
-		if (logging) {
+		if (loggingP2) {
 			sprintf((char*)nameArg1P2, "r0P2(%d)", arg1P2);
 		}
 	}
 
 	//detect and execute instruction - switch case would be better
 	if ((currentInstructionP2 & 6144) == 6144) { //INT
-		if (logging) {
+		if (loggingP2) {
 			printf("INT\n");
 		}
 		PEX2RUNNING = ~(PEX2RUNNING);
 	}
 	else if ((currentInstructionP2 & 5888) == 5888) { //cmps
-		if (logging) {
+		if (loggingP2) {
 			printf("CMPS %s %s\n", nameArg0P2, nameArg1P2);
 		}
 		//printf("CMP %d %d\n", *(unsigned int*)arg0P2, arg1P2);
@@ -728,20 +741,20 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 		}
 	}
 	else if ((currentInstructionP2 & 5632) == 5632) { //CLF
-		if (logging) {
+		if (loggingP2) {
 			printf("CLF\n");
 		}
 		flagsP2 = 0;
 	}
 	else if ((currentInstructionP2 & 5376) == 5376) { //xor
-		if (logging) {
+		if (loggingP2) {
 			printf("XOR %s %s\n", nameArg0P2, nameArg1P2);
 		}
 		*(unsigned int*)arg0P2 = *(unsigned int*)arg0P2 ^ arg1P2;
 		//flagsP2?
 	}
 	else if ((currentInstructionP2 & 5120) == 5120) { //or
-		if (logging) {
+		if (loggingP2) {
 			printf("OR %s %s\n", nameArg0P2, nameArg1P2);
 		}
 		*(unsigned int*)arg0P2 = *(unsigned int*)arg0P2 | arg1P2;
@@ -754,31 +767,31 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 	}
 	else if ((currentInstructionP2 & 4608) == 4608) { //pop
 		//printf("POP %d\n", *(unsigned int*)arg0P2);
-		if (logging) {
+		if (loggingP2) {
 			printf("POP %s\n", nameArg0P2);
 		}
 		//*(unsigned int*)arg0P2 = program[sp];
-		*(unsigned int*)arg0P2 = MMUgetValP2(sp);
+		*(unsigned int*)arg0P2 = MMUgetValP2(spP2);
 		spP2++;
 	}
 	else if ((currentInstructionP2 & 4352) == 4352) { //push
-		if (logging) {
+		if (loggingP2) {
 			printf("PUSH %s\n", nameArg0P2);
 		}
 		//printf("PUSH %d\n", *(unsigned int*)arg0P2);
 		spP2--;
 		//program[sp] = *(unsigned int*)arg0P2;
-		*(unsigned int*)MMUgetPtrP2(sp) = *(unsigned int*)arg0P2;
+		*(unsigned int*)MMUgetPtrP2(spP2) = *(unsigned int*)arg0P2;
 	}
 	else if ((currentInstructionP2 & 4096) == 4096) { //ld
-		if (logging) {
+		if (loggingP2) {
 			printf("LD %s %s\n", nameArg0P2, nameArg1P2);
 		}
 		//printf("LD %d %d\n", *(unsigned int*)arg0P2, arg1P2);
 		*(unsigned int*)arg0P2 = arg1P2;
 	}
 	else if ((currentInstructionP2 & 3840) == 3840) { //jlt
-		if (logging) {
+		if (loggingP2) {
 			printf("JLT %s\n", nameArg0P2);
 		}
 		//printf("JLT %d\n", *(unsigned int*)arg0P2);
@@ -788,7 +801,7 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 		}
 	}
 	else if ((currentInstructionP2 & 3584) == 3584) { //jgt - fixed
-		if (logging) {
+		if (loggingP2) {
 			printf("JGT %s\n", nameArg0P2);
 		}
 		//printf("JEQ %d\n", *(unsigned int*)arg0P2);
@@ -798,7 +811,7 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 		}
 	}
 	else if ((currentInstructionP2 & 3328) == 3328) { //jeq
-		if (logging) {
+		if (loggingP2) {
 			printf("JEQ %s\n", nameArg0P2);
 		}
 		//printf("JEQ %d\n", *(unsigned int*)arg0P2);
@@ -808,7 +821,7 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 		}
 	}
 	else if ((currentInstructionP2 & 3072) == 3072) { //jne
-		if (logging) {
+		if (loggingP2) {
 			printf("JNE %s\n", nameArg0P2);
 		}
 		//printf("JNE %d\n", *(unsigned int*)arg0P2);
@@ -820,25 +833,25 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 	else if ((currentInstructionP2 & 2816) == 2816) { //jmp
 		//printf("JMP %d\n", arg0P2);
 		//printf("JMP %d\n", *(unsigned int*)arg0P2);
-		if (logging) {
+		if (loggingP2) {
 			printf("JMP %s\n", nameArg0P2);
 		}
 		pcP2 = *(unsigned int*)arg0P2;
 		incrementP2 = 0;
 	}
 	else if ((currentInstructionP2 & 2560) == 2560) { //call
-		if (logging) {
+		if (loggingP2) {
 			printf("CALL %s\n", nameArg0P2);
 		}
 		//printf("CALL %d\n", *(unsigned int*)arg0P2);
 		spP2--;
 		//program[sp] = pcP2 + 1;
-		*(unsigned int*)MMUgetPtrP2(sp) = pcP2 + incrementP2;
+		*(unsigned int*)MMUgetPtrP2(spP2) = pcP2 + incrementP2;
 		pcP2 = *(unsigned int*)arg0P2;
 		incrementP2 = 0;
 	}
 	else if ((currentInstructionP2 & 2304) == 2304) { //ret
-		if (logging) {
+		if (loggingP2) {
 			printf("RET\n");
 		}
 		//pcP2 = program[sp];
@@ -847,13 +860,13 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 		incrementP2 = 0;
 	}
 	else if ((currentInstructionP2 & 2048) == 2048) { //not
-		if (logging) {
+		if (loggingP2) {
 			printf("NOT %s\n", nameArg0P2);
 		}
 		*(unsigned int*)arg0P2 = ~(*(unsigned int*)arg0P2);
 	}
 	else if ((currentInstructionP2 & 1792) == 1792) { //cmp
-		if (logging) {
+		if (loggingP2) {
 			printf("CMP %s %s\n", nameArg0P2, nameArg1P2);
 		}
 		//printf("CMP %d %d\n", *(unsigned int*)arg0P2, arg1P2);
@@ -866,14 +879,14 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 		}
 	}
 	else if ((currentInstructionP2 & 1536) == 1536) { //ls - multishift
-		if (logging) {
+		if (loggingP2) {
 			printf("LS %s\n", nameArg0P2);
 		}
 		//printf("RS %d\n", *(unsigned int*)arg0P2);
 		*(unsigned int*)arg0P2 = *(unsigned int*)arg0P2 << 1;
 	}
 	else if ((currentInstructionP2 & 1280) == 1280) { //rs - multishift
-		if (logging) {
+		if (loggingP2) {
 			printf("RS %s\n", nameArg0P2);
 		}
 		//printf("RS %d\n", *(unsigned int*)arg0P2);
@@ -887,14 +900,14 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 	}	//flagsP2?
 
 	else if ((currentInstructionP2 & 768) == 768) { //mul
-		if (logging) {
+		if (loggingP2) {
 			printf("MUL %s %s\n", nameArg0P2, nameArg1P2);
 		}
 		*(unsigned int*)arg0P2 = *(unsigned int*)arg0P2 * arg1P2;
 		//flagsP2?
 	}
 	else if ((currentInstructionP2 & 512) == 512) { //sub
-		if (logging) {
+		if (loggingP2) {
 			printf("SUB %s %s\n", nameArg0P2, nameArg1P2);
 		}
 		int oldArg0 = *(unsigned int*)arg0P2;
@@ -910,7 +923,7 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 	}
 	else if ((currentInstructionP2 & 256) == 256) { //add
 		//printf("%d ", &r0P2);
-		if (logging) {
+		if (loggingP2) {
 			printf("ADD %s %s\n", nameArg0P2, nameArg1P2);
 		}
 		int oldArg0 = *(unsigned int*)arg0P2;
@@ -923,7 +936,7 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 		}
 	}
 	else {
-		if (logging) {
+		if (loggingP2) {
 			printf("NOP\n");
 		}
 	}
@@ -942,7 +955,6 @@ void cpuStepP2() { //when do you clear/reset flagsP2??????????????? - add INT to
 	opsCPU2++;
 }
 
-
 void convert(short* original, char* RGBA) {
 	for (int i = 0; i < (512*224); i++) {
 		RGBA[i * 4] = (original[i] & 31) << 3;
@@ -956,7 +968,7 @@ void convert(short* original, char* RGBA) {
 
 int main(int argc, char* args[]) //implement sound DAC
 {
-	char fileName[100] = "C:\\Users\\Will\\Documents\\UFC32-main-1\\UFC32-main\\compiler\\out.bin";
+	char fileName[100] = "C:\\Users\\Will\\Documents\\UFC32-main-1\\UFC32-main\\compiler\\new.bin";
 	printf("Loading %s\n", fileName);
 	//printf("Loading %s\n", args[1]);
 
