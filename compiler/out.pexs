@@ -1,28 +1,59 @@
 LD IDX main
 CALL IDX
-_array_data:
-DB 10
-DB 9
-DB 8
-DB 7
-DB 6
-DB 5
-DB 4
-DB 3
-DB 2
+_code_data:
+DB 114688
+DB 57344
+DB 0
+DB 4224
+DB 4225
 DB 1
-array:
-DB _array_data
-main:
+DB 2304
+DB 10
+DB 4111
+DB 271
+DB 287
+DB 4127
+DB 4143
+DB 559
+DB 1839
+DB 4158
+DB 4323
+DB 100
+DB 2800
+DB 3056
+DB 3824
+DB 0
+DB 0
+DB 0
+DB 0
+code:
+DB _code_data
+codeBuffer:
+DB 4718592
+screenBuffer:
+DB 4718692
+keyDown:
+DB 4816896
+memcpy:
+LD IDX SP
+SUB IDX 1
+LD [IDX] r0
+SUB IDX 1
+LD [IDX] r1
+SUB IDX 1
+LD [IDX] r2
+LD SP IDX
 PUSH 0
-LD r0 1
+LD r0 0
 LD r1 SP
 LD IDX r1
 LD [IDX] r0
 l0:
 LD IDX SP
 LD r0 [IDX]
-LD r1 10
+LD IDX SP
+ADD IDX 1
+LD r1 [IDX]
 CMP r0 r1
 JLT l1
 LD r0 0
@@ -32,31 +63,53 @@ LD r0 1
 l2:
 CMP r0 0
 JEQ l3
-LD IDX array
+LD IDX SP
+ADD IDX 3
 LD r0 [IDX]
 LD IDX SP
 LD r1 [IDX]
 ADD r0 r1
 LD IDX r0
 LD r0 [IDX]
-PUSH r0
-PUSH 0
+LD r1 SP
+ADD r1 2
 LD IDX SP
-ADD IDX 2
+LD r2 [IDX]
+LD IDX r1
+LD r1 [IDX]
+ADD r1 r2
+LD IDX r1
+LD [IDX] r0
+LD IDX SP
 LD r0 [IDX]
-LD r1 1
-SUB r0 r1
+ADD [IDX] 1
+JMP l0
+l3:
+ADD SP 1
+ADD SP 3
+RET
+memset:
+LD IDX SP
+SUB IDX 1
+LD [IDX] r0
+SUB IDX 1
+LD [IDX] r1
+SUB IDX 1
+LD [IDX] r2
+LD SP IDX
+PUSH 0
+LD r0 0
 LD r1 SP
 LD IDX r1
 LD [IDX] r0
 l4:
 LD IDX SP
 LD r0 [IDX]
-LD r1 1
-NOT r1
-ADD r1 1
+LD IDX SP
+ADD IDX 1
+LD r1 [IDX]
 CMP r0 r1
-JNE l5
+JLT l5
 LD r0 0
 JMP l6
 l5:
@@ -64,78 +117,58 @@ LD r0 1
 l6:
 CMP r0 0
 JEQ l7
-LD IDX array
-LD r0 [IDX]
 LD IDX SP
-LD r1 [IDX]
-ADD r0 r1
-LD IDX r0
+ADD IDX 3
 LD r0 [IDX]
-LD IDX SP
-ADD IDX 1
-LD r1 [IDX]
-CMP r0 r1
-JGT l8
-LD r0 0
-JMP l9
-l8:
-LD r0 1
-l9:
-CMP r0 0
-JEQ l7
-LD r0 1
-JMP l10
-l7:
-LD r0 0
-l10:
-CMP r0 0
-JEQ l11
-LD IDX array
-LD r0 [IDX]
-LD IDX SP
-LD r1 [IDX]
-ADD r0 r1
-LD IDX r0
-LD r0 [IDX]
-LD r1 array
+LD r1 SP
+ADD r1 2
 LD IDX SP
 LD r2 [IDX]
-LD r3 1
-ADD r2 r3
 LD IDX r1
 LD r1 [IDX]
 ADD r1 r2
 LD IDX r1
 LD [IDX] r0
-LD IDX SP
-LD r0 [IDX]
-SUB [IDX] 1
-JMP l4
-l11:
-LD IDX SP
-ADD IDX 1
-LD r0 [IDX]
-LD r1 array
-LD IDX SP
-LD r2 [IDX]
-LD r3 1
-ADD r2 r3
-LD IDX r1
-LD r1 [IDX]
-ADD r1 r2
-LD IDX r1
-LD [IDX] r0
-ADD SP 2
 LD IDX SP
 LD r0 [IDX]
 ADD [IDX] 1
-JMP l0
-l3:
-LD IDX array
-LD IDX [IDX]
-loop:
+JMP l4
+l7:
+ADD SP 1
+ADD SP 3
+RET
+main:
+PUSH 0
+LD IDX code
 LD r0 [IDX]
-ADD IDX 1
-JMP loop 
+LD IDX codeBuffer
+LD r1 [IDX]
+LD r2 25
+LD IDX memcpy
+CALL IDX
+INT
+l8:
+LD r0 1
+CMP r0 0
+JEQ l9
+LD IDX keyDown
+LD r0 [IDX]
+LD IDX r0
+LD r0 [IDX]
+NOT r0
+LD r1 SP
+LD IDX r1
+LD [IDX] r0
+LD IDX SP
+LD r0 [IDX]
+LD IDX screenBuffer
+LD r1 [IDX]
+LD r2 512
+LD r3 112
+MUL r2 r3
+LD IDX memset
+CALL IDX
+JMP l8
+l9:
 ADD SP 1
 RET

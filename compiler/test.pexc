@@ -1,5 +1,31 @@
-void main() {
+u32 code[25] = {114688, 57344, 0, 4224, 4225, 1, 2304, 10, 4111, 271, 287, 4127, 4143, 559, 1839, 4158, 4323, 100, 2800, 3056, 3824};
+u32 codeBuffer = 4718592;
+u32 screenBuffer = 4718692;
+u32 keyDown = 4816896;
+
+void memcpy(u32 src, u32 dest, u32 dwords){
 	u32 i;
-	for(i = 0; i < 10; i++) {
+	for(i=0; i<dwords; i++){
+		dest[i] = src[i];
 	}
+}
+
+void memset(u32 val, u32 dest, u32 dwords){
+	u32 i;
+	for(i=0; i<dwords; i++){
+		dest[i] = val;
+	}
+}
+
+void main(){
+	u32 key;
+
+	memcpy(code, codeBuffer, 25);
+	asm{INT};
+
+	while(1){
+		key = ~(*keyDown);
+		memset(key, screenBuffer, 512*112);
+	}
+
 }

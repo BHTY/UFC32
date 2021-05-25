@@ -93,7 +93,7 @@ class CompilationException : Exception {
 void bfp(ParseTree parse) {
 	switch (parse.name) {
 		case "PEXC.GlobalDecl":
-			assembly ~= format!"%s: DB %s"(parse.matches[1], parse.children.length == 1 ? parse[0].matches[0] : "0");
+			assembly ~= format!"%s:\nDB %s"(parse.matches[1], parse.children.length == 1 ? parse[0].matches[0] : "0");
 			globalSymbols ~= parse.matches[1];
 			break;
 		case "PEXC.GlobalArrayDecl":
